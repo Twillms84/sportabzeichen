@@ -1,0 +1,14 @@
+# modules/PulsR/SportabzeichenBundle/Resources/config/services.yml
+services:
+    _defaults:
+        autoconfigure: true
+        autowire: true
+        public: false
+
+    PulsR\SportabzeichenBundle\Controller\:
+        resource: '../../Controller/*'
+        public: true
+        tags: ['controller.service_arguments']
+
+    PulsR\SportabzeichenBundle\EventListener\:
+        resource: '../../EventListener/*'

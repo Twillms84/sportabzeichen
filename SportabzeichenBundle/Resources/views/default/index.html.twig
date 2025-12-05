@@ -1,0 +1,32 @@
+{# modules/PulsR/SportabzeichenBundle/Resources/views/default/index.html.twig #}
+{% extends '@IServCore/page.html.twig' %}
+
+{% block title %}
+  Sportabzeichen Verwaltung
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+      <div class="card shadow-sm">
+          <div class="card-body">
+              <h1 class="mb-3">
+                  <i class="fa fa-medal text-warning"></i> Sportabzeichen Verwaltung
+              </h1>
+
+              <p>Willkommen im Sportabzeichen-Modul von IServ.</p>
+
+              <p>
+                  Über dieses Modul können Lehrkräfte künftig Schülerdaten importieren,
+                  Leistungen in Disziplinen eintragen und automatisch
+                  die Urkunden für Bronze, Silber oder Gold generieren.
+              </p>
+
+              <hr>
+
+              <p class="text-muted">
+                  <small>Version 0.1 – Entwickelt von PulsR für IServ</small>
+              </p>
+          </div>
+      </div>
+  </div>
+{% endblock %}
