@@ -33,7 +33,7 @@ final class ExamController extends AbstractController
             $p['geschlecht'] = match (strtolower(trim($p['geschlecht'] ?? ''))) {
                 'm', 'male' => 'MALE',
                 'w', 'female' => 'FEMALE',
-                default => 'MALE', // Fallback
+                default => 'MALE',
             };
 
             $p['swim_status'] = false;
@@ -42,37 +42,40 @@ final class ExamController extends AbstractController
         }
         unset($p);
 
-        // Anforderungen abrufen
-        $reqRaw = $this->db->fetchAllAssociative('SELECT * FROM sportabzeichen_requirements ORDER BY jahr, auswahlnummer');
+        // Anforderungen laden
+        $reqRaw = $this->db->fetchAllAssociative('SELECT * FROM sportabzeichen_requirements');
         $requirements = [];
 
         foreach ($reqRaw as $r) {
-            $geschlecht = match (strtolower($r['geschlecht'] ?? '')) {
-                'm', 'male' => 'MALE',
-                'w', 'female' => 'FEMALE',
-                default => 'MALE',
-            };
-
-            $altersklasse = strtoupper(trim($r['altersklasse']));
+            $geschlecht = strtoupper(trim($r['geschlecht'] ?? 'MALE'));
+            $altersklasse = strtoupper(trim($r['altersklasse'] ?? ''));
             $kategorie = strtoupper(trim($r['kategorie'] ?? 'UNKNOWN'));
             $berechnungsart = strtoupper(trim($r['berechnungsart'] ?? ''));
 
-            if ($altersklasse && $kategorie) {
-                $requirements[$geschlecht][$altersklasse][$kategorie][] = [
-                    'auswahlnummer' => $r['auswahlnummer'] ?? 0,
-                    'disziplin' => trim($r['disziplin']),
-                    'bronze' => $r['bronze'],
-                    'silber' => $r['silber'],
-                    'gold' => $r['gold'],
-                    'einheit' => $r['einheit'],
-                    'berechnungsart' => $berechnungsart,
-                    'punktefeld' => empty($r['berechnungsart']),
-                ];
-            }
+            if (!$altersklasse) continue;
+
+            $requirements[$geschlecht][$altersklasse][$kategorie][] = [
+                'auswahlnummer' => $r['auswahlnummer'] ?? 0,
+                'disziplin' => trim($r['disziplin']),
+                'bronze' => $r['bronze'],
+                'silber' => $r['silber'],
+                'gold' => $r['gold'],
+                'einheit' => $r['einheit'],
+                'berechnungsart' => $berechnungsart,
+                'punktefeld' => empty($berechnungsart),
+            ];
         }
 
-        // DEBUG: zeigen, was tatsächlich da ist
-        file_put_contents('/tmp/requirements.log', print_r(array_keys($requirements['MALE'] ?? []), true));
+        // Debug
+        file_put_contents(
+           '/usr/share/iserv/web/modules/PulsR/SportabzeichenBundle/Resources/logs/sportabzeichen_debug.log',
+            print_r([
+               'keys_male' => array_keys($requirements['MALE'] ?? []),
+               'keys_female' => array_keys($requirements['FEMALE'] ?? []),
+               'sample' => $requirements['MALE']['AC0708']['ENDURANCE'][0] ?? null,
+            ], true)
+ 	);
+
 
         return $this->render('@PulsRSportabzeichen/exam/index.html.twig', [
             'title' => 'Sportabzeichen Prüfungen',
@@ -82,16 +85,56 @@ final class ExamController extends AbstractController
     }
 
     private function getAgeClass(int $age): string
-    {
-        if ($age < 7) return 'AC0006';
-        if ($age <= 25) {
-            $start = (int)(floor(($age - 7) / 2) * 2 + 7);
-            return sprintf('AC%02d%02d', $start, $start + 1);
-        }
-        if ($age < 90) {
-            $start = (int)(floor(($age - 25) / 5) * 5 + 25);
-            return sprintf('AC%02d%02d', $start, $start + 4);
-        }
-        return 'AC9000';
+{
+    // Unter 6 Jahren → keine Zuordnung
+    if ($age < 6) {
+        return 'AC0006';
     }
+
+    // Kinder und Jugendliche: feste 2er-Gruppen bis 19
+    $childClasses = [
+        [6, 7, 'AC0607'],
+        [8, 9, 'AC0809'],
+        [10, 11, 'AC1011'],
+        [12, 13, 'AC1213'],
+        [14, 15, 'AC1415'],
+        [16, 17, 'AC1617'],
+        [18, 19, 'AC1819'],
+    ];
+
+    foreach ($childClasses as $range) {
+        if ($age >= $range[0] && $age <= $range[1]) {
+            return $range[2];
+        }
+    }
+
+    // Erwachsene: 5-Jahres-Gruppen
+    $adultRanges = [
+        [20, 24, 'AC2024'],
+        [25, 29, 'AC2529'],
+        [30, 34, 'AC3034'],
+        [35, 39, 'AC3539'],
+        [40, 44, 'AC4044'],
+        [45, 49, 'AC4549'],
+        [50, 54, 'AC5054'],
+        [55, 59, 'AC5559'],
+        [60, 64, 'AC6064'],
+        [65, 69, 'AC6569'],
+        [70, 74, 'AC7074'],
+        [75, 79, 'AC7579'],
+        [80, 84, 'AC8084'],
+        [85, 89, 'AC8589'],
+    ];
+
+    foreach ($adultRanges as $range) {
+        if ($age >= $range[0] && $age <= $range[1]) {
+            return $range[2];
+        }
+    }
+
+    // Ab 90+
+    return 'AC9000';
+}
+
+
 }
