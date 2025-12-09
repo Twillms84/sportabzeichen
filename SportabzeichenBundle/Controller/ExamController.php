@@ -6,135 +6,178 @@ namespace PulsR\SportabzeichenBundle\Controller;
 
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/sportabzeichen/exams', name: 'sportabzeichen_exams_')]
 final class ExamController extends AbstractController
 {
-    public function __construct(private Connection $db) {}
-
-    #[Route('/', name: 'index')]
-    public function index(): Response
+    #[Route('/sportabzeichen/exams', name: 'sportabzeichen_exams')]
+    public function index(Request $request, Connection $db): Response
     {
-        $participants = $this->db->fetchAllAssociative('SELECT * FROM sportabzeichen_participants ORDER BY nachname, vorname');
-        $currentYear = (int) date('Y');
+        $jahr = (int) date('Y');
 
-        foreach ($participants as &$p) {
-            if (!empty($p['geburtsdatum'])) {
-                $birth = new \DateTimeImmutable($p['geburtsdatum']);
-                $p['alter'] = $currentYear - (int)$birth->format('Y');
-                $p['altersklasse'] = $this->getAgeClass($p['alter']);
-            } else {
-                $p['alter'] = null;
-                $p['altersklasse'] = null;
+        // -----------------------------
+        // Filter
+        // -----------------------------
+        $klasse = $request->query->get('klasse');
+        $geschlecht = $request->query->get('geschlecht');
+        $altersklasse = $request->query->get('altersklasse');
+        $disziplin = $request->query->get('disziplin');
+
+        // -----------------------------
+        // Teilnehmer laden
+        // -----------------------------
+        $query = "
+            SELECT p.*, u.auxinfo AS klasse
+            FROM sportabzeichen_participants p
+            LEFT JOIN users u ON p.import_id = u.importid
+            WHERE 1=1
+        ";
+
+        $params = [];
+        if ($geschlecht) {
+            $query .= " AND (p.geschlecht = :geschlecht OR 
+                            (p.geschlecht = 'm' AND :geschlecht = 'MALE') OR 
+                            (p.geschlecht = 'w' AND :geschlecht = 'FEMALE'))";
+            $params['geschlecht'] = $geschlecht;
+        }
+
+        if ($klasse) {
+            $query .= " AND u.auxinfo = :klasse";
+            $params['klasse'] = $klasse;
+        }
+
+        $participants = $db->fetchAllAssociative($query, $params);
+
+        // -----------------------------
+        // Disziplinen laden (Requirements)
+        // -----------------------------
+        $reqData = $db->fetchAllAssociative("
+            SELECT disziplin, kategorie, auswahlnummer
+            FROM sportabzeichen_requirements
+            WHERE jahr = :jahr
+            ORDER BY kategorie, auswahlnummer
+        ", ['jahr' => $jahr % 100]);
+
+        $disciplineOptions = [
+            'ENDURANCE' => [],
+            'FORCE' => [],
+            'COORDINATION' => [],
+            'RAPIDNESS' => [],
+        ];
+
+        foreach ($reqData as $row) {
+            $cat = strtoupper($row['kategorie']);
+            if (isset($disciplineOptions[$cat])) {
+                $disciplineOptions[$cat][] = [
+                    'name' => $row['disziplin'],
+                    'sort' => (int)$row['auswahlnummer'],
+                ];
             }
-
-            $p['geschlecht'] = match (strtolower(trim($p['geschlecht'] ?? ''))) {
-                'm', 'male' => 'MALE',
-                'w', 'female' => 'FEMALE',
-                default => 'MALE',
-            };
-
-            $p['swim_status'] = false;
-            $p['swim_valid_until'] = null;
-            $p['swim_icon'] = '❌';
-        }
-        unset($p);
-
-        // Anforderungen laden
-        $reqRaw = $this->db->fetchAllAssociative('SELECT * FROM sportabzeichen_requirements');
-        $requirements = [];
-
-        foreach ($reqRaw as $r) {
-            $geschlecht = strtoupper(trim($r['geschlecht'] ?? 'MALE'));
-            $altersklasse = strtoupper(trim($r['altersklasse'] ?? ''));
-            $kategorie = strtoupper(trim($r['kategorie'] ?? 'UNKNOWN'));
-            $berechnungsart = strtoupper(trim($r['berechnungsart'] ?? ''));
-
-            if (!$altersklasse) continue;
-
-            $requirements[$geschlecht][$altersklasse][$kategorie][] = [
-                'auswahlnummer' => $r['auswahlnummer'] ?? 0,
-                'disziplin' => trim($r['disziplin']),
-                'bronze' => $r['bronze'],
-                'silber' => $r['silber'],
-                'gold' => $r['gold'],
-                'einheit' => $r['einheit'],
-                'berechnungsart' => $berechnungsart,
-                'punktefeld' => empty($berechnungsart),
-            ];
         }
 
-        // Debug
-        file_put_contents(
-           '/usr/share/iserv/web/modules/PulsR/SportabzeichenBundle/Resources/logs/sportabzeichen_debug.log',
-            print_r([
-               'keys_male' => array_keys($requirements['MALE'] ?? []),
-               'keys_female' => array_keys($requirements['FEMALE'] ?? []),
-               'sample' => $requirements['MALE']['AC0708']['ENDURANCE'][0] ?? null,
-            ], true)
- 	);
+        foreach ($disciplineOptions as &$list) {
+            usort($list, fn($a, $b) => $a['sort'] <=> $b['sort']);
+        }
 
+        // Klassen für Filter (aus User-Daten)
+        $klassen = $db->fetchFirstColumn("SELECT DISTINCT auxinfo FROM users WHERE auxinfo IS NOT NULL ORDER BY auxinfo");
 
-        return $this->render('@PulsRSportabzeichen/exam/index.html.twig', [
-            'title' => 'Sportabzeichen Prüfungen',
+       foreach ($participants as &$p) {
+       // Wert absichern und in String wandeln
+          $geschlechtRaw = $p['geschlecht'] ?? '';
+          $geschlecht = strtolower(trim((string)$geschlechtRaw));
+
+          $p['geschlecht_text'] = match ($geschlecht) {
+             'm', 'male' => 'Männlich',
+             'w', 'female' => 'Weiblich',
+             default => 'Unbekannt',
+          };
+       }
+
+        return $this->render('@PulsRSportabzeichen/exams/index.html.twig', [
+            'jahr' => $jahr,
             'participants' => $participants,
-            'requirements' => $requirements,
+            'disciplineOptions' => $disciplineOptions,
+            'klassen' => $klassen,
+            'selectedKlasse' => $klasse,
+            'selectedGeschlecht' => $geschlecht,
+            'selectedAltersklasse' => $altersklasse,
+            'selectedDisziplin' => $disziplin,
         ]);
     }
 
-    private function getAgeClass(int $age): string
-{
-    // Unter 6 Jahren → keine Zuordnung
-    if ($age < 6) {
-        return 'AC0006';
-    }
-
-    // Kinder und Jugendliche: feste 2er-Gruppen bis 19
-    $childClasses = [
-        [6, 7, 'AC0607'],
-        [8, 9, 'AC0809'],
-        [10, 11, 'AC1011'],
-        [12, 13, 'AC1213'],
-        [14, 15, 'AC1415'],
-        [16, 17, 'AC1617'],
-        [18, 19, 'AC1819'],
-    ];
-
-    foreach ($childClasses as $range) {
-        if ($age >= $range[0] && $age <= $range[1]) {
-            return $range[2];
+    // -----------------------------
+    // Speicherung der Werte
+    // -----------------------------
+    #[Route('/sportabzeichen/exams/save', name: 'sportabzeichen_exams_save', methods: ['POST'])]
+    public function save(Request $request, Connection $db): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return new JsonResponse(['error' => 'Leere oder ungültige Daten.'], 400);
         }
-    }
 
-    // Erwachsene: 5-Jahres-Gruppen
-    $adultRanges = [
-        [20, 24, 'AC2024'],
-        [25, 29, 'AC2529'],
-        [30, 34, 'AC3034'],
-        [35, 39, 'AC3539'],
-        [40, 44, 'AC4044'],
-        [45, 49, 'AC4549'],
-        [50, 54, 'AC5054'],
-        [55, 59, 'AC5559'],
-        [60, 64, 'AC6064'],
-        [65, 69, 'AC6569'],
-        [70, 74, 'AC7074'],
-        [75, 79, 'AC7579'],
-        [80, 84, 'AC8084'],
-        [85, 89, 'AC8589'],
-    ];
+        $jahr = (int) date('Y');
+        $count = 0;
 
-    foreach ($adultRanges as $range) {
-        if ($age >= $range[0] && $age <= $range[1]) {
-            return $range[2];
+        foreach ($data as $entry) {
+            $participant_id = $entry['participant_id'] ?? null;
+            if (!$participant_id) {
+                continue;
+            }
+
+            $db->executeStatement("
+                INSERT INTO sportabzeichen_exams (
+                    participant_id, jahr, klasse,
+                    koordination_disziplin, koordination_wert,
+                    ausdauer_disziplin, ausdauer_wert,
+                    schnelligkeit_disziplin, schnelligkeit_wert,
+                    kraft_disziplin, kraft_wert,
+                    schwimmnachweis, gesamtpunkte, updated_at
+                ) VALUES (
+                    :participant_id, :jahr, :klasse,
+                    :koordination_disziplin, :koordination_wert,
+                    :ausdauer_disziplin, :ausdauer_wert,
+                    :schnelligkeit_disziplin, :schnelligkeit_wert,
+                    :kraft_disziplin, :kraft_wert,
+                    :schwimmnachweis, :gesamtpunkte, NOW()
+                )
+                ON CONFLICT (participant_id, jahr)
+                DO UPDATE SET
+                    klasse = EXCLUDED.klasse,
+                    koordination_disziplin = EXCLUDED.koordination_disziplin,
+                    koordination_wert = EXCLUDED.koordination_wert,
+                    ausdauer_disziplin = EXCLUDED.ausdauer_disziplin,
+                    ausdauer_wert = EXCLUDED.ausdauer_wert,
+                    schnelligkeit_disziplin = EXCLUDED.schnelligkeit_disziplin,
+                    schnelligkeit_wert = EXCLUDED.schnelligkeit_wert,
+                    kraft_disziplin = EXCLUDED.kraft_disziplin,
+                    kraft_wert = EXCLUDED.kraft_wert,
+                    schwimmnachweis = EXCLUDED.schwimmnachweis,
+                    gesamtpunkte = EXCLUDED.gesamtpunkte,
+                    updated_at = NOW()
+            ", [
+                'participant_id' => $participant_id,
+                'jahr' => $jahr,
+                'klasse' => $entry['klasse'] ?? null,
+                'koordination_disziplin' => $entry['koordination_disziplin'] ?? null,
+                'koordination_wert' => $entry['koordination_wert'] ?? null,
+                'ausdauer_disziplin' => $entry['ausdauer_disziplin'] ?? null,
+                'ausdauer_wert' => $entry['ausdauer_wert'] ?? null,
+                'schnelligkeit_disziplin' => $entry['schnelligkeit_disziplin'] ?? null,
+                'schnelligkeit_wert' => $entry['schnelligkeit_wert'] ?? null,
+                'kraft_disziplin' => $entry['kraft_disziplin'] ?? null,
+                'kraft_wert' => $entry['kraft_wert'] ?? null,
+                'schwimmnachweis' => !empty($entry['schwimmnachweis']),
+                'gesamtpunkte' => $entry['gesamtpunkte'] ?? 0,
+            ]);
+
+            $count++;
         }
+
+        return new JsonResponse(['message' => "✅ $count Datensätze gespeichert."]);
     }
-
-    // Ab 90+
-    return 'AC9000';
-}
-
-
 }
