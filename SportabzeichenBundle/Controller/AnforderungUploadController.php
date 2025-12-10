@@ -105,10 +105,10 @@ final class AnforderungUploadController extends AbstractPageController
                             // 1. Disziplin holen oder anlegen (Statement + fetchColumn auf Statement)
                             $disciplineId = null;
 
-                            $stmt = $conn->prepare("SELECT id FROM sportabzeichen_disciplines WHERE name = :name");
-                            $stmt->bindValue('name', $disziplinName);
-                            $stmt->execute();
-                            $disciplineId = $stmt->fetchColumn();
+                            $disciplineId = $conn->fetchOne(
+                                "SELECT id FROM sportabzeichen_disciplines WHERE name = ?",
+                                [$disziplin]
+                            );
 
                             if ($disciplineId === false || $disciplineId === null) {
                                 // Neue Disziplin anlegen
