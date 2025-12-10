@@ -4,43 +4,59 @@ declare(strict_types=1);
 
 namespace PulsR\SportabzeichenBundle\Controller;
 
+use Doctrine\ORM\EntityManagerInterface;
 use IServ\CoreBundle\Controller\AbstractPageController;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenParticipant;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenRequirement;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
-#[Route('/sportabzeichen/manage')]
-class ManageController extends AbstractPageController
+#[Route(path: '/sportabzeichen', name: 'sportabzeichen_')]
+final class ManageController extends AbstractPageController
 {
-    #[Route('/', name: 'sportabzeichen_manage_index')]
+    #[Route(path: '/manage', name: 'manage')]
     public function index(EntityManagerInterface $em): Response
     {
-        // ----------------------------------------------------
-        // STATISTIKEN ERMITTELN
-        // ----------------------------------------------------
+        // Anzahl Prüfungen
+        $exams = $em->getRepository(SportabzeichenExam::class)->count([]);
 
-        $examCount = $em->getRepository(SportabzeichenExam::class)->count([]);
-        $participantCount = $em->getRepository(SportabzeichenParticipant::class)->count([]);
+        // Anzahl Teilnehmer
+        $participants = $em->getRepository(SportabzeichenParticipant::class)->count([]);
 
-        $years = $em->createQuery("
-            SELECT DISTINCT r.jahr
-            FROM PulsR\\SportabzeichenBundle\\Entity\\SportabzeichenRequirement r
-        ")->getResult();
-        $requirementYears = count($years);
+        // Anzahl verschiedener Jahre im Katalog
+        $requirementYears = $em->getRepository(SportabzeichenRequirement::class)
+            ->createQueryBuilder('r')
+            ->select('COUNT(DISTINCT r.jahr)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
         $stats = [
-            'exams' => $examCount,
-            'participants' => $participantCount,
+            'exams' => $exams,
+            'participants' => $participants,
             'requirementYears' => $requirementYears,
         ];
 
         return $this->render('@PulsRSportabzeichen/manage/index.html.twig', [
-            'title' => _('Sportabzeichen Verwaltung'),
+            'title' => 'Sportabzeichen – Verwaltung',
             'stats' => $stats,
+            'tabs' => [
+                [
+                    'label' => 'Verwaltung',
+                    'route' => 'sportabzeichen_manage',
+                    'active' => true
+                ],
+                [
+                    'label' => 'Prüfungen',
+                    'route' => 'sportabzeichen_exam_index',
+                    'active' => false
+                ],
+                [
+                    'label' => 'Teilnehmer',
+                    'route' => 'sportabzeichen_participant_index',
+                    'active' => false
+                ],
+            ]
         ]);
     }
 }
-
