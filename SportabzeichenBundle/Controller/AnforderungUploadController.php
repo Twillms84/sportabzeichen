@@ -8,16 +8,19 @@ use Doctrine\DBAL\Connection;
 use IServ\CoreBundle\Controller\AbstractPageController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * Upload + Import der DOSB-Anforderungstabellen als CSV.
- * CSV-Felder werden 1:1 eingelesen und korrekt auf das neue relationale Schema abgebildet.
- */
 #[Route(path: '/sportabzeichen/admin', name: 'sportabzeichen_admin_')]
 final class AnforderungUploadController extends AbstractPageController
 {
+    private const CATEGORY_MAP = [
+        'ENDURANCE'    => 'Ausdauer',
+        'FORCE'        => 'Kraft',
+        'RAPIDNESS'    => 'Schnelligkeit',
+        'COORDINATION' => 'Koordination',
+        'SWIMMING'     => 'Schwimmen'
+    ];
+
     #[Route(path: '/upload', name: 'upload')]
     public function upload(Request $request, Connection $conn): Response
     {
@@ -28,177 +31,141 @@ final class AnforderungUploadController extends AbstractPageController
         $importCount = 0;
         $skipCount = 0;
 
-        // --- Logging
+        // Logging vorbereiten
         $logDir = '/var/lib/iserv/sportabzeichen/logs';
         if (!is_dir($logDir)) {
             @mkdir($logDir, 0775, true);
         }
-        $debugLog = $logDir . '/import_debug.log';
-        file_put_contents($debugLog, "\n=== Neuer Import: " . date('Y-m-d H:i:s') . " ===\n", FILE_APPEND);
+        $debugLog = $logDir . '/requirements_import.log';
+        file_put_contents($debugLog, "=== Import gestartet " . date('Y-m-d H:i:s') . " ===\n", FILE_APPEND);
 
         if ($request->isMethod('POST')) {
-            $file = $request->files->get('csvFile');
 
+            $file = $request->files->get('csvFile');
             if (!$file) {
-                $error = 'Keine Datei ausgewählt.';
-            } elseif ($file->getClientOriginalExtension() !== 'csv') {
-                $error = 'Nur CSV-Dateien erlaubt.';
-            } else {
-                $tmpPath = $file->getRealPath();
+                return $this->renderError("Keine Datei ausgewählt.");
+            }
+
+            if ($file->getClientOriginalExtension() !== 'csv') {
+                return $this->renderError("Nur CSV erlaubt!");
+            }
+
+            $path = $file->getRealPath();
+            $handle = fopen($path, 'r');
+
+            if (!$handle) {
+                return $this->renderError("Konnte Datei nicht öffnen.");
+            }
+
+            // Encoding erkennen
+            $sample = fread($handle, 4096);
+            rewind($handle);
+            $encoding = mb_detect_encoding($sample, ['UTF-8', 'Windows-1252', 'ISO-8859-1'], true);
+            file_put_contents($debugLog, "Encoding erkannt: $encoding\n", FILE_APPEND);
+
+            $convert = function ($row) use ($encoding) {
+                return array_map(function ($v) use ($encoding) {
+                    $v = trim($v, " \t\n\r\0\x0B\"");
+                    return $encoding !== 'UTF-8' ? mb_convert_encoding($v, 'UTF-8', $encoding) : $v;
+                }, $row);
+            };
+
+            // Kopfzeile überspringen
+            fgetcsv($handle, 0, ',');
+
+            while (($row = fgetcsv($handle, 0, ',')) !== false) {
+                $row = $convert($row);
+
+                // CSV-Spalten prüfen
+                if (count($row) < 14) {
+                    $skipCount++;
+                    file_put_contents($debugLog, "Zu wenige Spalten: " . json_encode($row) . "\n", FILE_APPEND);
+                    continue;
+                }
 
                 try {
-                    if (($handle = fopen($tmpPath, 'r')) !== false) {
-                        $delimiter = ',';
+                    $nummer        = (int)$row[0];
+                    $jahr          = (int)$row[1];
+                    $altersklasse  = $row[2];
+                    $geschlecht    = strtoupper($row[3]);
+                    $auswahlnummer = (int)$row[4];
+                    $disziplinName = $row[5];
+                    $kategorieCode = strtoupper($row[6]);
+                    $bronze        = $row[7] !== '' ? (float)$row[7] : null;
+                    $silber        = $row[8] !== '' ? (float)$row[8] : null;
+                    $gold          = $row[9] !== '' ? (float)$row[9] : null;
+                    $einheit       = $row[11] ?: null;
+                    $schwimmnachw  = strtolower($row[12]) === 'true';
+                    $berechnungs   = strtoupper($row[13] ?: 'GREATER');
 
-                        // Encoding erkennen
-                        $sample = fread($handle, 4096);
-                        rewind($handle);
-                        $encoding = mb_detect_encoding(
-                            $sample,
-                            ['UTF-8', 'ISO-8859-1', 'Windows-1252'],
-                            true
-                        );
+                    // Kategorie mappen
+                    $kategorie = self::CATEGORY_MAP[$kategorieCode] ?? $kategorieCode;
 
-                        $convert = fn(array $row) =>
-                            array_map(
-                                fn($v) =>
-                                    $encoding && $encoding !== 'UTF-8'
-                                        ? mb_convert_encoding($v, 'UTF-8', $encoding)
-                                        : $v,
-                                $row
-                            );
+                    // 1. Disziplin sicherstellen
+                    $disciplineId = $conn->fetchColumn(
+                        "SELECT id FROM sportabzeichen_disciplines WHERE name = ?",
+                        [$disziplinName]
+                    );
 
-                        // Kopfzeile überspringen
-                        fgetcsv($handle, 0, $delimiter);
-
-                        // --- SQL vorbereitet ---
-
-                        // Disziplin finden
-                        $sqlFindDiscipline = "
-                            SELECT id FROM sportabzeichen_disciplines
-                            WHERE name = :name 
-                              AND kategorie = :kat 
-                              AND einheit = :einheit 
-                              AND berechnungsart = :art
-                            LIMIT 1
-                        ";
-
-                        // Disziplin einfügen
-                        $sqlInsertDiscipline = "
-                            INSERT INTO sportabzeichen_disciplines 
-                                (name, kategorie, einheit, berechnungsart)
-                            VALUES 
-                                (:name, :kat, :einheit, :art)
-                            RETURNING id
-                        ";
-
-                        // Requirements einfügen/updaten
-                        $sqlInsertRequirement = "
-                            INSERT INTO sportabzeichen_requirements
-                                (discipline_id, jahr, altersklasse, geschlecht, bronze, silber, gold, schwimmnachweis)
-                            VALUES
-                                (:discipline_id, :jahr, :altersklasse, :geschlecht, :bronze, :silber, :gold, :schwimmnachweis)
-                            ON CONFLICT (discipline_id, jahr, altersklasse, geschlecht)
-                            DO UPDATE SET
-                                bronze = EXCLUDED.bronze,
-                                silber = EXCLUDED.silber,
-                                gold = EXCLUDED.gold,
-                                schwimmnachweis = EXCLUDED.schwimmnachweis
-                        ";
-
-                        $stmtFindDisc = $conn->prepare($sqlFindDiscipline);
-                        $stmtInsertDisc = $conn->prepare($sqlInsertDiscipline);
-                        $stmtInsertReq = $conn->prepare($sqlInsertRequirement);
-
-                        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-                            $row = $convert(array_map(fn($v) => trim($v, " \t\n\r\0\x0B\""), $row));
-
-                            if (count($row) < 14) {
-                                file_put_contents($debugLog, "⚠️ Zu wenige Spalten: " . json_encode($row) . "\n", FILE_APPEND);
-                                $skipCount++;
-                                continue;
-                            }
-
-                            // --- CSV auslesen ---
-                            $jahr           = (int)$row[1];
-                            $altersklasse   = $row[2];
-                            $geschlecht     = strtoupper($row[3]);   // m/w/d
-                            $disziplin      = $row[5];
-                            $kategorie      = strtoupper($row[6]);
-                            $map = [
-                                'ENDURANCE'    => 'Ausdauer',
-                                'FORCE'        => 'Kraft',
-                                'RAPIDNESS'    => 'Schnelligkeit',
-                                'COORDINATION' => 'Koordination',
-                                'SWIMMING'     => 'Schwimmen'
-                            ];
-                            $kategorieMapped = $map[$kategorie] ?? $kategorie;
-                            $bronze         = $row[7] !== '' ? (float)$row[7] : null;
-                            $silber         = $row[8] !== '' ? (float)$row[8] : null;
-                            $gold           = $row[9] !== '' ? (float)$row[9] : null;
-                            $einheit        = $row[11];
-                            $schwimm        = in_array(strtolower($row[12]), ['1', 'true', 'yes', 'y'], true);
-                            $berechnungsart = strtoupper($row[13] ?: 'GREATER');
-
-                            // --- 1. Disziplin suchen ---
-                            $stmtFindDisc->execute([
-                                'name' => $disziplin,
-                                'kat' => $kategorie,
-                                'einheit' => $einheit,
-                                'art' => $berechnungsart,
-                            ]);
-
-                            $disciplineId = $stmtFindDisc->fetchOne();
-
-                            // --- 2. Falls nicht vorhanden → anlegen ---
-                            if (!$disciplineId) {
-                                $stmtInsertDisc->execute([
-                                    'name' => $disziplin,
-                                    'kat' => $kategorieMapped,
-                                    'einheit' => $einheit,
-                                    'art' => $berechnungsart,
-                                ]);
-                                $disciplineId = $stmtInsertDisc->fetchOne();
-                            }
-
-                            // --- 3. Requirement einfügen/updaten ---
-                            try {
-                                $stmtInsertReq->execute([
-                                    'discipline_id' => $disciplineId,
-                                    'jahr' => $jahr,
-                                    'altersklasse' => $altersklasse,
-                                    'geschlecht' => $geschlecht,
-                                    'bronze' => $bronze,
-                                    'silber' => $silber,
-                                    'gold' => $gold,
-                                    'schwimmnachweis' => $schwimm,
-                                ]);
-
-                                $importCount++;
-                            } catch (\Throwable $e) {
-                                $skipCount++;
-                                file_put_contents($debugLog, "❌ SQL-Fehler: {$e->getMessage()}\n", FILE_APPEND);
-                            }
-                        }
-
-                        fclose($handle);
+                    if (!$disciplineId) {
+                        $conn->insert('sportabzeichen_disciplines', [
+                            'name'           => $disziplinName,
+                            'kategorie'      => $kategorie,
+                            'einheit'        => $einheit ?: '',
+                            'berechnungsart' => $berechnungs,
+                        ]);
+                        $disciplineId = $conn->lastInsertId();
+                        file_put_contents($debugLog, "Neue Disziplin: $disziplinName\n", FILE_APPEND);
                     }
 
-                    $message = sprintf(
-                        '✅ Import abgeschlossen: %d Zeilen übernommen, %d übersprungen.',
-                        $importCount,
-                        $skipCount
-                    );
-                } catch (FileException $e) {
-                    $error = 'Fehler beim Verarbeiten der Datei: ' . $e->getMessage();
+                    // 2. Requirement speichern
+                    $conn->executeStatement("
+                        INSERT INTO sportabzeichen_requirements
+                            (discipline_id, jahr, altersklasse, geschlecht, bronze, silber, gold, schwimmnachweis)
+                        VALUES
+                            (:discipline, :jahr, :ak, :g, :bronze, :silber, :gold, :sn)
+                        ON CONFLICT (discipline_id, jahr, altersklasse, geschlecht)
+                        DO UPDATE SET
+                            bronze = EXCLUDED.bronze,
+                            silber = EXCLUDED.silber,
+                            gold = EXCLUDED.gold,
+                            schwimmnachweis = EXCLUDED.schwimmnachweis
+                    ", [
+                        'discipline' => $disciplineId,
+                        'jahr'       => $jahr,
+                        'ak'         => $altersklasse,
+                        'g'          => $geschlecht,
+                        'bronze'     => $bronze,
+                        'silber'     => $silber,
+                        'gold'       => $gold,
+                        'sn'         => $schwimmnachw,
+                    ]);
+
+                    $importCount++;
+
+                } catch (\Throwable $e) {
+                    $skipCount++;
+                    file_put_contents($debugLog, "Fehler: " . $e->getMessage() . "\n", FILE_APPEND);
                 }
             }
+
+            fclose($handle);
+
+            $message = "Import abgeschlossen: $importCount Datensätze importiert, $skipCount übersprungen.";
         }
 
         return $this->render('@PulsRSportabzeichen/admin/upload.html.twig', [
-            'title' => _('Disziplinanforderungen hochladen'),
+            'title' => "Anforderungen Import",
             'message' => $message,
-            'error' => $error,
+            'error' => $error
+        ]);
+    }
+
+    private function renderError(string $msg): Response
+    {
+        return $this->render('@PulsRSportabzeichen/admin/upload.html.twig', [
+            'title' => 'Anforderungen Import',
+            'error' => $msg
         ]);
     }
 }
