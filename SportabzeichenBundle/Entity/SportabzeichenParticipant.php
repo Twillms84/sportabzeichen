@@ -2,57 +2,128 @@
 
 declare(strict_types=1);
 
-namespace PulsR\SportabzeichenBundle\Crud;
+namespace PulsR\SportabzeichenBundle\Entity;
 
-use IServ\CrudBundle\Crud\ServiceCrud;
-use IServ\CrudBundle\Mapper\FormMapper;
-use IServ\CrudBundle\Mapper\ListMapper;
-use IServ\CrudBundle\Mapper\ShowMapper;
-use PulsR\SportabzeichenBundle\Entity\SportabzeichenParticipant;
+use Doctrine\ORM\Mapping as ORM;
 
-class ParticipantCrud extends ServiceCrud
+#[ORM\Entity]
+#[ORM\Table(name: 'sportabzeichen_participants')]
+class SportabzeichenParticipant
 {
-    protected static $entityClass = SportabzeichenParticipant::class;
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
-    protected function configure(): void
+    /**
+     * Eindeutige IServ/LDAP-ID
+     * Wird per CSV-Import gesetzt.
+     */
+    #[ORM\Column(type: 'text', unique: true)]
+    private string $importId;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $vorname = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $nachname = null;
+
+    /**
+     * 'm', 'w', 'd'
+     * Ebenfalls per CSV gesetzt.
+     */
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $geschlecht = null;
+
+    /**
+     * Kommt ebenfalls aus dem CSV-Upload.
+     */
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTimeImmutable $geburtsdatum = null;
+
+    #[ORM\Column(type: 'datetimetz')]
+    private \DateTimeImmutable $updatedAt;
+
+    public function __construct()
     {
-        $this->title = _('Teilnehmer');
-        $this->itemTitle = _('Teilnehmer');
-        // keine Add/Delete? hängt von dir ab
-        // $this->disableAdd();
-        // $this->disableDelete();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
-    public function configureListFields(ListMapper $list): void
-    {
-        $list
-            ->addIdentifier('nachname')
-            ->add('vorname')
-            ->add('geschlecht')
-            ->add('geburtsdatum')
-            ->add('importId');
+    // --- GETTER & SETTER ---
+
+    public function getId(): int 
+    { 
+        return $this->id; 
     }
 
-    public function configureFormFields(FormMapper $form): void
-    {
-        $readonly = ['disabled' => true];
-
-        $form
-            ->add('importId', null, $readonly)
-            ->add('vorname', null, $readonly)
-            ->add('nachname', null, $readonly)
-            ->add('geschlecht', null, $readonly)
-            ->add('geburtsdatum', null, $readonly);
+    public function getImportId(): string 
+    { 
+        return $this->importId; 
     }
 
-    public function configureShowFields(ShowMapper $show): void
+    public function setImportId(string $id): self
     {
-        $show
-            ->add('importId')
-            ->add('vorname')
-            ->add('nachname')
-            ->add('geschlecht')
-            ->add('geburtsdatum')
-            ->add('updatedAt');
+        $this->importId = $id;
+        return $this;
+    }
+
+    public function getVorname(): ?string 
+    {
+        return $this->vorname;
+    }
+
+    public function setVorname(?string $v): self
+    {
+        $this->vorname = $v;
+        return $this;
+    }
+
+    public function getNachname(): ?string 
+    {
+        return $this->nachname;
+    }
+
+    public function setNachname(?string $n): self
+    {
+        $this->nachname = $n;
+        return $this;
+    }
+
+    public function getGeschlecht(): ?string
+    {
+        return $this->geschlecht;
+    }
+
+    public function setGeschlecht(?string $g): self
+    {
+        $this->geschlecht = $g;
+        return $this;
+    }
+
+    public function getGeburtsdatum(): ?\DateTimeImmutable 
+    {
+        return $this->geburtsdatum;
+    }
+
+    public function setGeburtsdatum(?\DateTimeImmutable $d): self
+    {
+        $this->geburtsdatum = $d;
+        return $this;
+    }
+
+    public function getUpdatedAt(): \DateTimeImmutable 
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $dt): self
+    {
+        $this->updatedAt = $dt;
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return trim(($this->nachname ?? '') . ' ' . ($this->vorname ?? ''));
     }
 }
