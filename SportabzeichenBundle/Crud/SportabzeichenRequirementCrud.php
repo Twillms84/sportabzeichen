@@ -5,23 +5,13 @@ declare(strict_types=1);
 namespace PulsR\SportabzeichenBundle\Crud;
 
 use IServ\CrudBundle\Crud\ServiceCrud;
-use IServ\CrudBundle\Mapper\ListMapper;
 use IServ\CrudBundle\Mapper\FormMapper;
-use IServ\CrudBundle\Doctrine\ORM\ORMObjectManager;
+use IServ\CrudBundle\Mapper\ListMapper;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenRequirement;
 
 class SportabzeichenRequirementCrud extends ServiceCrud
 {
-    // WICHTIG: für iserv_crud Routing zwingend notwendig
     protected static $entityClass = SportabzeichenRequirement::class;
-
-    public function __construct(ORMObjectManager $objectManager)
-    {
-        // WICHTIG: für Legacy-ServiceCrud notwendig
-        $this->class = SportabzeichenRequirement::class;
-
-        parent::__construct($objectManager);
-    }
 
     protected function configure(): void
     {
@@ -57,3 +47,4 @@ class SportabzeichenRequirementCrud extends ServiceCrud
             ->add('berechnungsart');
     }
 }
+

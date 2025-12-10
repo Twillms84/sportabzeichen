@@ -5,23 +5,13 @@ declare(strict_types=1);
 namespace PulsR\SportabzeichenBundle\Crud;
 
 use IServ\CrudBundle\Crud\ServiceCrud;
-use IServ\CrudBundle\Mapper\ListMapper;
 use IServ\CrudBundle\Mapper\FormMapper;
-use IServ\CrudBundle\Doctrine\ORM\ORMObjectManager;
+use IServ\CrudBundle\Mapper\ListMapper;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 
 class ExamCrud extends ServiceCrud
 {
-    // WICHTIG: für IServ-Routing erforderlich!
     protected static $entityClass = SportabzeichenExam::class;
-
-    public function __construct(ORMObjectManager $objectManager)
-    {
-        // WICHTIG: für Legacy-ServiceCrud erforderlich!
-        $this->class = SportabzeichenExam::class;
-
-        parent::__construct($objectManager);
-    }
 
     protected function configure(): void
     {
@@ -33,8 +23,8 @@ class ExamCrud extends ServiceCrud
     {
         $list
             ->addIdentifier('examName')
-            ->add('examDate')
             ->add('examYear')
+            ->add('examDate')
             ->add('createdAt');
     }
 
@@ -42,7 +32,7 @@ class ExamCrud extends ServiceCrud
     {
         $form
             ->add('examName')
-            ->add('examDate')
-            ->add('examYear');
+            ->add('examYear')
+            ->add('examDate');
     }
 }
