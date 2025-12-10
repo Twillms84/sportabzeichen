@@ -5,7 +5,7 @@
 {% block body %}
 <h1>Sportabzeichen – Prüfungen</h1>
 
-<a href="{{ path('sportabzeichen_exam_new') }}" class="btn btn-primary mb-3">
+<a href="{{ path('crud_sportabzeichenexam_new') }}" class="btn btn-primary mb-3">
     Neue Prüfung anlegen
 </a>
 
@@ -13,7 +13,6 @@
     <thead>
     <tr>
         <th>ID</th>
-        <th>Name</th>
         <th>Datum</th>
         <th>Jahr</th>
         <th>Teilnehmer</th>
@@ -24,18 +23,16 @@
     {% for exam in items %}
         <tr>
             <td>{{ exam.id }}</td>
-            <td>{{ exam.examName }}</td>
             <td>{{ exam.examDate ? exam.examDate|date('d.m.Y') : '-' }}</td>
             <td>{{ exam.examYear }}</td>
             <td>{{ exam.examParticipants|length }}</td>
             <td>
-                <a href="{{ path('sportabzeichen_exam_participants', {id: exam.id}) }}" class="btn btn-sm btn-secondary">
-                    Teilnehmer
-                </a>
+                <a href="{{ path('sportabzeichen_exam_participants', { id: exam.id }) }}"
+                   class="btn btn-sm btn-secondary">Teilnehmer</a>
             </td>
         </tr>
     {% else %}
-        <tr><td colspan="6">Keine Prüfungen vorhanden.</td></tr>
+        <tr><td colspan="5">Keine Prüfungen vorhanden.</td></tr>
     {% endfor %}
     </tbody>
 </table>
