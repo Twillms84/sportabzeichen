@@ -161,7 +161,7 @@ final class AnforderungUploadController extends AbstractPageController
                                 'bronze'        => $bronze,
                                 'silber'        => $silber,
                                 'gold'          => $gold,
-                                'sn'            => $schwimmnachweis,
+                                'sn'            => (bool)$schwimmnachweis,
                             ]);
 
                             $imported++;
