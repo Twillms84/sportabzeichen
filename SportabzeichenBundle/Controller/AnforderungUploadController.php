@@ -154,7 +154,7 @@ final class AnforderungUploadController extends AbstractPageController
                             if (!$disciplineId) {
                                 $stmtInsertDisc->execute([
                                     'name' => $disziplin,
-                                    'kat' => $kategorieMapped
+                                    'kat' => $kategorieMapped,
                                     'einheit' => $einheit,
                                     'art' => $berechnungsart,
                                 ]);
