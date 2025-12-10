@@ -105,10 +105,24 @@ final class AnforderungUploadController extends AbstractPageController
                             // 1. Disziplin holen oder anlegen (Statement + fetchColumn auf Statement)
                             $disciplineId = null;
 
+                            // 1. Disziplin Lookup (DBAL 3: fetchOne)
                             $disciplineId = $conn->fetchOne(
                                 "SELECT id FROM sportabzeichen_disciplines WHERE name = ?",
-                                [$disziplin]
+                                [$disziplinName]
                             );
+
+                            if (!$disciplineId) {
+                                // Neue Disziplin anlegen
+                                $conn->insert('sportabzeichen_disciplines', [
+                                    'name'           => $disziplinName,
+                                    'kategorie'      => $kategorie,
+                                    'einheit'        => $einheit ?: '',
+                                    'berechnungsart' => $berechnung,
+                                ]);
+
+                                $disciplineId = $conn->lastInsertId();
+                                file_put_contents($logFile, "Neue Disziplin angelegt: {$disziplinName} (ID {$disciplineId})\n", FILE_APPEND);
+                            }
 
                             if ($disciplineId === false || $disciplineId === null) {
                                 // Neue Disziplin anlegen
