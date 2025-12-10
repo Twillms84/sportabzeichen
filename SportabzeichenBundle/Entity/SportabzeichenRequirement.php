@@ -5,7 +5,15 @@ declare(strict_types=1);
 namespace PulsR\SportabzeichenBundle\Entity;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'sportabzeichen_requirements')]
+#[ORM\Table(
+    name: 'sportabzeichen_requirements',
+    uniqueConstraints: [
+        new ORM\UniqueConstraint(
+            name: "uniq_req",
+            columns: ["discipline_id", "jahr", "altersklasse", "geschlecht"]
+        )
+    ]
+)]
 class SportabzeichenRequirement
 {
     #[ORM\Id]
@@ -14,7 +22,7 @@ class SportabzeichenRequirement
     private int $id;
 
     #[ORM\ManyToOne(targetEntity: SportabzeichenDiscipline::class)]
-    #[ORM\JoinColumn(name: 'discipline_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: "discipline_id", referencedColumnName: "id")]
     private SportabzeichenDiscipline $discipline;
 
     #[ORM\Column(type: 'integer')]
@@ -37,14 +45,5 @@ class SportabzeichenRequirement
 
     #[ORM\Column(type: 'boolean')]
     private bool $schwimmnachweis = false;
-
-    public function __toString(): string
-    {
-        return sprintf('%s (%s %s %d)', 
-            $this->discipline->getName(),
-            $this->geschlecht,
-            $this->altersklasse,
-            $this->jahr
-        );
-    }
 }
+

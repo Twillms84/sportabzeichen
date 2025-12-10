@@ -11,18 +11,31 @@ final class Version20250218000100 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Initial schema for Sportabzeichen module including exams, participants, requirements, exam_participants and exam_results.';
+        return 'Initial schema for Sportabzeichen module with normalized disciplines, requirements, exams, participants, exam participants and exam results.';
     }
 
     public function up(Schema $schema): void
     {
         // ---------------------------------------------------------
-        // sportabzeichen_exams
+        // 1. Disziplinen (NEU: Normalisierte Stammdaten)
+        // ---------------------------------------------------------
+        $this->addSql("
+            CREATE TABLE sportabzeichen_disciplines (
+                id              SERIAL PRIMARY KEY,
+                name            TEXT NOT NULL,
+                kategorie       TEXT NOT NULL,
+                einheit         TEXT NOT NULL,
+                berechnungsart  TEXT NOT NULL DEFAULT 'GREATER',
+                created_at      TIMESTAMPTZ DEFAULT NOW()
+            );
+        ");
+
+        // ---------------------------------------------------------
+        // 2. Prüfungen
         // ---------------------------------------------------------
         $this->addSql("
             CREATE TABLE sportabzeichen_exams (
                 id SERIAL PRIMARY KEY,
-                exam_name   TEXT,
                 exam_date   DATE,
                 exam_year   INT NOT NULL,
                 created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -31,7 +44,7 @@ final class Version20250218000100 extends AbstractMigration
         ");
 
         // ---------------------------------------------------------
-        // sportabzeichen_participants
+        // 3. Teilnehmer
         // ---------------------------------------------------------
         $this->addSql("
             CREATE TABLE sportabzeichen_participants (
@@ -46,72 +59,74 @@ final class Version20250218000100 extends AbstractMigration
         ");
 
         // ---------------------------------------------------------
-        // sportabzeichen_requirements
-        // Dies ist deine bestehende Tabelle, angepasst auf vollständiges Schema
+        // 4. Anforderungen (NEU: Disziplin-FK, UNIQUE constraint)
         // ---------------------------------------------------------
         $this->addSql("
             CREATE TABLE sportabzeichen_requirements (
                 id              SERIAL PRIMARY KEY,
+                discipline_id   INT NOT NULL REFERENCES sportabzeichen_disciplines(id) ON DELETE CASCADE,
                 jahr            INT NOT NULL,
                 altersklasse    TEXT NOT NULL,
                 geschlecht      TEXT NOT NULL,
-                auswahlnummer   INT NOT NULL,
-                disziplin       TEXT NOT NULL,
-                kategorie       TEXT NOT NULL,
                 bronze          DOUBLE PRECISION,
                 silber          DOUBLE PRECISION,
                 gold            DOUBLE PRECISION,
-                einheit         TEXT,
-                schwimmnachweis BOOLEAN DEFAULT FALSE,
-                berechnungsart  TEXT DEFAULT 'GREATER'
+                schwimmnachweis BOOLEAN DEFAULT FALSE
             );
         ");
 
+        // UNIQUE für ON CONFLICT im CSV-Importer
+        $this->addSql("
+            ALTER TABLE sportabzeichen_requirements
+                ADD CONSTRAINT uniq_requirements
+                UNIQUE (discipline_id, jahr, altersklasse, geschlecht);
+        ");
+
         // ---------------------------------------------------------
-        // sportabzeichen_exam_participants
+        // 5. Prüfungs-Teilnehmer (Exam ↔ Participant)
         // ---------------------------------------------------------
         $this->addSql("
             CREATE TABLE sportabzeichen_exam_participants (
                 id              SERIAL PRIMARY KEY,
                 exam_id         INT NOT NULL REFERENCES sportabzeichen_exams(id) ON DELETE CASCADE,
                 participant_id  INT NOT NULL REFERENCES sportabzeichen_participants(id) ON DELETE CASCADE,
-                age_year        INT NOT NULL,
                 UNIQUE (exam_id, participant_id)
             );
         ");
 
         // ---------------------------------------------------------
-        // sportabzeichen_exam_results
+        // 6. Prüfungsergebnisse (NORMALISIERT: discipline_id statt Text)
         // ---------------------------------------------------------
         $this->addSql("
             CREATE TABLE sportabzeichen_exam_results (
                 id              SERIAL PRIMARY KEY,
                 ep_id           INT NOT NULL REFERENCES sportabzeichen_exam_participants(id) ON DELETE CASCADE,
-                disziplin       TEXT NOT NULL,
-                kategorie       TEXT NOT NULL,
-                auswahlnummer   INT NOT NULL,
+                discipline_id   INT NOT NULL REFERENCES sportabzeichen_disciplines(id),
                 leistung        DOUBLE PRECISION,
-                stufe           TEXT
+                stufe           TEXT,
+                points          INT,
+                created_at      TIMESTAMPTZ DEFAULT NOW()
             );
         ");
 
         // ---------------------------------------------------------
-        // GRANTS für IServ / Symfony
+        // 7. GRANTS für IServ / Symfony
         // ---------------------------------------------------------
+        $tables = [
+            'sportabzeichen_disciplines',
+            'sportabzeichen_exams',
+            'sportabzeichen_participants',
+            'sportabzeichen_requirements',
+            'sportabzeichen_exam_participants',
+            'sportabzeichen_exam_results'
+        ];
 
-        // Sequences
-        $this->addSql("GRANT USAGE, SELECT ON SEQUENCE sportabzeichen_exams_id_seq TO symfony;");
-        $this->addSql("GRANT USAGE, SELECT ON SEQUENCE sportabzeichen_participants_id_seq TO symfony;");
-        $this->addSql("GRANT USAGE, SELECT ON SEQUENCE sportabzeichen_requirements_id_seq TO symfony;");
-        $this->addSql("GRANT USAGE, SELECT ON SEQUENCE sportabzeichen_exam_participants_id_seq TO symfony;");
-        $this->addSql("GRANT USAGE, SELECT ON SEQUENCE sportabzeichen_exam_results_id_seq TO symfony;");
+        foreach ($tables as $table) {
+            $seq = "{$table}_id_seq";
 
-        // Tabellen
-        $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON sportabzeichen_exams TO symfony;");
-        $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON sportabzeichen_participants TO symfony;");
-        $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON sportabzeichen_requirements TO symfony;");
-        $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON sportabzeichen_exam_participants TO symfony;");
-        $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON sportabzeichen_exam_results TO symfony;");
+            $this->addSql("GRANT SELECT, INSERT, UPDATE, DELETE ON $table TO symfony;");
+            $this->addSql("GRANT USAGE, SELECT ON SEQUENCE $seq TO symfony;");
+        }
     }
 
     public function down(Schema $schema): void
@@ -119,6 +134,7 @@ final class Version20250218000100 extends AbstractMigration
         $this->addSql("DROP TABLE IF EXISTS sportabzeichen_exam_results;");
         $this->addSql("DROP TABLE IF EXISTS sportabzeichen_exam_participants;");
         $this->addSql("DROP TABLE IF EXISTS sportabzeichen_requirements;");
+        $this->addSql("DROP TABLE IF EXISTS sportabzeichen_disciplines;");
         $this->addSql("DROP TABLE IF EXISTS sportabzeichen_participants;");
         $this->addSql("DROP TABLE IF EXISTS sportabzeichen_exams;");
     }

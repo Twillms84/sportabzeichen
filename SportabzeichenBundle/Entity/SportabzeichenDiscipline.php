@@ -33,3 +33,4 @@ class SportabzeichenDiscipline
         $this->createdAt = new \DateTimeImmutable();
     }
 }
+
