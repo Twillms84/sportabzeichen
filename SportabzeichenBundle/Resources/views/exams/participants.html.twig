@@ -19,11 +19,13 @@
     </thead>
     <tbody>
     {% for entry in items %}
-        {% set age = exam.examYear - entry.participant.geburtsdatum|date('Y') %}
+        {% set geb = entry.participant.geburtsdatum %}
+        {% set age = geb ? exam.examYear - geb|date('Y') : '-' %}
+
         <tr>
             <td>{{ entry.id }}</td>
             <td>{{ entry.participant.vorname }} {{ entry.participant.nachname }}</td>
-            <td>{{ age }} Jahre</td>
+            <td>{{ age }}</td>
             <td>
                 <a href="{{ path('sportabzeichen_results_for_participant', { ep: entry.id }) }}"
                    class="btn btn-sm btn-secondary">Ergebnisse</a>

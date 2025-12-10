@@ -42,29 +42,29 @@
 
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h4 class="card-title">👥 Teilnehmerdaten</h4>
-                    <p>Teilnehmer importieren oder bearbeiten.</p>
+            <div class="card-body">
+                <h4 class="card-title">👥 Teilnehmerdaten</h4>
+                <p>Teilnehmer importieren oder bearbeiten.</p>
 
-                    <a href="{{ path('crud_sportabzeichenparticipant_index') }}" class="btn btn-primary">
-                        Teilnehmer anzeigen
-                    </a>
+                <a href="{{ path('crud_sportabzeichenparticipant_index') }}" class="btn btn-primary">
+                    Teilnehmer anzeigen
+                </a>
 
-                    <a href="{{ path('sportabzeichen_admin_upload_teilnehmer') }}" class="btn btn-outline-secondary mt-2">
-                        CSV importieren
-                    </a>
-                </div>
+                <a href="{{ path('sportabzeichen_admin_upload_teilnehmer') }}" class="btn btn-outline-secondary mt-2">
+                    CSV importieren
+                </a>
             </div>
         </div>
+    </div>
 
     </div>
 
     <div class="mt-4 p-3 bg-light border rounded">
         <h5>📊 Systemstatus</h5>
         <ul class="list-unstyled mb-0">
-            <li>• Prüfungen: <strong>{{ stats.exams }}</strong></li>
-            <li>• Teilnehmer: <strong>{{ stats.participants }}</strong></li>
-            <li>• Jahrgänge: <strong>{{ stats.requirementYears }}</strong></li>
+            <li>• Prüfungen insgesamt: <strong>{{ stats.exams }}</strong></li>
+            <li>• Teilnehmer im System: <strong>{{ stats.participants }}</strong></li>
+            <li>• Jahrgänge mit Anforderungen: <strong>{{ stats.requirementYears }}</strong></li>
         </ul>
     </div>
 
