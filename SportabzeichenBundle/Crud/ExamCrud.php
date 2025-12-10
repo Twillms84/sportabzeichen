@@ -22,7 +22,7 @@ class ExamCrud extends ServiceCrud
     public function configureListFields(ListMapper $list): void
     {
         $list
-            ->addIdentifier('examName')
+            ->addIdentifier('id')
             ->add('examYear')
             ->add('examDate')
             ->add('createdAt');
@@ -31,7 +31,6 @@ class ExamCrud extends ServiceCrud
     public function configureFormFields(FormMapper $form): void
     {
         $form
-            ->add('examName')
             ->add('examYear')
             ->add('examDate');
     }

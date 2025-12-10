@@ -18,6 +18,9 @@ class ParticipantCrud extends ServiceCrud
     {
         $this->title = _('Teilnehmer');
         $this->itemTitle = _('Teilnehmer');
+        // keine Add/Delete? hängt von dir ab
+        // $this->disableAdd();
+        // $this->disableDelete();
     }
 
     public function configureListFields(ListMapper $list): void
@@ -32,32 +35,24 @@ class ParticipantCrud extends ServiceCrud
 
     public function configureFormFields(FormMapper $form): void
     {
+        $readonly = ['disabled' => true];
+
         $form
+            ->add('importId', null, $readonly)
+            ->add('vorname', null, $readonly)
+            ->add('nachname', null, $readonly)
+            ->add('geschlecht', null, $readonly)
+            ->add('geburtsdatum', null, $readonly);
+    }
+
+    public function configureShowFields(ShowMapper $show): void
+    {
+        $show
             ->add('importId')
             ->add('vorname')
             ->add('nachname')
             ->add('geschlecht')
-            ->add('geschlechtText')
-            ->add('geburtsdatum');
+            ->add('geburtsdatum')
+            ->add('updatedAt');
     }
-    public function configureShowFields(ShowMapper $show): void
-    {
-    $show
-        ->add('importId', null, ['label' => _('Import-ID')])
-        ->add('vorname', null, ['label' => _('Vorname')])
-        ->add('nachname', null, ['label' => _('Nachname')])
-        ->add('geschlecht', null, ['label' => _('Geschlecht (m/w)')])
-        ->add('geschlechtText', 'virtual', [
-        'label' => _('Geschlecht (Text)'),
-        'fieldAccessor' => 'getGeschlechtText',
-        ])
-        ->add('geburtsdatum', 'date', [
-        'label' => _('Geburtsdatum'),
-        ])
-        ->add('updatedAt', 'datetime', [
-        'label' => _('Letzte Aktualisierung'),
-        ]);
-    }
-
 }
-
