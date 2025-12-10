@@ -19,14 +19,9 @@ class SportabzeichenExamResult
     #[ORM\JoinColumn(name: 'ep_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private SportabzeichenExamParticipant $examParticipant;
 
-    #[ORM\Column(type: 'text')]
-    private string $disziplin;
-
-    #[ORM\Column(type: 'text')]
-    private string $kategorie;
-
-    #[ORM\Column(type: 'integer')]
-    private int $auswahlnummer;
+    #[ORM\ManyToOne(targetEntity: SportabzeichenDiscipline::class)]
+    #[ORM\JoinColumn(name: 'discipline_id', referencedColumnName: 'id')]
+    private SportabzeichenDiscipline $discipline;
 
     #[ORM\Column(type: 'float', nullable: true)]
     private ?float $leistung = null;
@@ -34,5 +29,14 @@ class SportabzeichenExamResult
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $stufe = null;
 
-    // GETTER & SETTER …
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $points = null;
+
+    #[ORM\Column(type: 'datetimetz')]
+    private \DateTimeImmutable $createdAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
 }

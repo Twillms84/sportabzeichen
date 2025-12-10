@@ -25,10 +25,7 @@ class SportabzeichenExamParticipant
     #[ORM\JoinColumn(name: 'participant_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private SportabzeichenParticipant $participant;
 
-    #[ORM\Column(type: 'integer')]
-    private int $ageYear;
-
-    #[ORM\OneToMany(mappedBy: 'examParticipant', targetEntity: SportabzeichenExamResult::class, cascade: ['remove'])]
+    #[ORM\OneToMany(mappedBy: 'examParticipant', targetEntity: SportabzeichenExamResult::class)]
     private Collection $results;
 
     public function __construct()
@@ -36,5 +33,11 @@ class SportabzeichenExamParticipant
         $this->results = new ArrayCollection();
     }
 
-    // GETTER & SETTER …
+    // Altersberechnung (korrekt nach DOSB-Regel: Alter im Prüfungsjahr)
+    public function getAgeForExam(): int
+    {
+        return $this->exam->getExamYear() - $this->participant->getGeburtsdatum()->format('Y');
+    }
+
+    // GETTER / SETTER …
 }
