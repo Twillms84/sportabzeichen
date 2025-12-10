@@ -28,16 +28,12 @@ class SportabzeichenDiscipline
     private string $berechnungsart;
 
     #[ORM\Column(type: 'datetimetz')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeInterface $createdAt;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
     }
-
-    // ---------------------------------------
-    // GETTER / SETTER
-    // ---------------------------------------
 
     public function getId(): int
     {
@@ -49,21 +45,9 @@ class SportabzeichenDiscipline
         return $this->name;
     }
 
-    public function setName(string $name): self
-    {
-        $this->name = $name;
-        return $this;
-    }
-
     public function getKategorie(): string
     {
         return $this->kategorie;
-    }
-
-    public function setKategorie(string $kategorie): self
-    {
-        $this->kategorie = $kategorie;
-        return $this;
     }
 
     public function getEinheit(): string
@@ -71,30 +55,13 @@ class SportabzeichenDiscipline
         return $this->einheit;
     }
 
-    public function setEinheit(string $einheit): self
-    {
-        $this->einheit = $einheit;
-        return $this;
-    }
-
     public function getBerechnungsart(): string
     {
         return $this->berechnungsart;
     }
 
-    public function setBerechnungsart(string $art): self
-    {
-        $this->berechnungsart = $art;
-        return $this;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
-    }
-
-    public function __toString(): string
-    {
-        return $this->name . ' (' . $this->kategorie . ')';
     }
 }
