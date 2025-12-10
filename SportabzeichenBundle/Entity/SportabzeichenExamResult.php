@@ -32,11 +32,72 @@ class SportabzeichenExamResult
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $points = null;
 
-    #[ORM\Column(type: 'datetimetz')]
-    private \DateTimeImmutable $createdAt;
+    // ---------------------------------------
+    // GETTER / SETTER
+    // ---------------------------------------
 
-    public function __construct()
+    public function getId(): int
     {
-        $this->createdAt = new \DateTimeImmutable();
+        return $this->id;
+    }
+
+    public function getExamParticipant(): SportabzeichenExamParticipant
+    {
+        return $this->examParticipant;
+    }
+
+    public function setExamParticipant(SportabzeichenExamParticipant $ep): self
+    {
+        $this->examParticipant = $ep;
+        return $this;
+    }
+
+    public function getDiscipline(): SportabzeichenDiscipline
+    {
+        return $this->discipline;
+    }
+
+    public function setDiscipline(SportabzeichenDiscipline $discipline): self
+    {
+        $this->discipline = $discipline;
+        return $this;
+    }
+
+    public function getLeistung(): ?float
+    {
+        return $this->leistung;
+    }
+
+    public function setLeistung(?float $value): self
+    {
+        $this->leistung = $value;
+        return $this;
+    }
+
+    public function getStufe(): ?string
+    {
+        return $this->stufe;
+    }
+
+    public function setStufe(?string $stufe): self
+    {
+        $this->stufe = $stufe;
+        return $this;
+    }
+
+    public function getPoints(): ?int
+    {
+        return $this->points;
+    }
+
+    public function setPoints(?int $points): self
+    {
+        $this->points = $points;
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->discipline->getName() . ' – ' . ($this->leistung ?? '?');
     }
 }

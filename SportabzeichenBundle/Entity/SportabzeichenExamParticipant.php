@@ -9,7 +9,15 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'sportabzeichen_exam_participants')]
+#[ORM\Table(
+    name: 'sportabzeichen_exam_participants',
+    uniqueConstraints: [
+        new ORM\UniqueConstraint(
+            name: 'uniq_exam_participant',
+            columns: ['exam_id', 'participant_id']
+        )
+    ]
+)]
 class SportabzeichenExamParticipant
 {
     #[ORM\Id]
@@ -21,11 +29,11 @@ class SportabzeichenExamParticipant
     #[ORM\JoinColumn(name: 'exam_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private SportabzeichenExam $exam;
 
-    #[ORM\ManyToOne(targetEntity: SportabzeichenParticipant::class)]
+    #[ORM\ManyToOne(targetEntity: SportabzeichenParticipant::class, inversedBy: 'examParticipations')]
     #[ORM\JoinColumn(name: 'participant_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private SportabzeichenParticipant $participant;
 
-    #[ORM\OneToMany(mappedBy: 'examParticipant', targetEntity: SportabzeichenExamResult::class)]
+    #[ORM\OneToMany(mappedBy: 'examParticipant', targetEntity: SportabzeichenExamResult::class, cascade: ['remove'])]
     private Collection $results;
 
     public function __construct()
@@ -33,11 +41,44 @@ class SportabzeichenExamParticipant
         $this->results = new ArrayCollection();
     }
 
-    // Altersberechnung (korrekt nach DOSB-Regel: Alter im Prüfungsjahr)
-    public function getAgeForExam(): int
+    // ---------------------------------------
+    // GETTER / SETTER
+    // ---------------------------------------
+
+    public function getId(): int
     {
-        return $this->exam->getExamYear() - $this->participant->getGeburtsdatum()->format('Y');
+        return $this->id;
     }
 
-    // GETTER / SETTER …
+    public function getExam(): SportabzeichenExam
+    {
+        return $this->exam;
+    }
+
+    public function setExam(SportabzeichenExam $exam): self
+    {
+        $this->exam = $exam;
+        return $this;
+    }
+
+    public function getParticipant(): SportabzeichenParticipant
+    {
+        return $this->participant;
+    }
+
+    public function setParticipant(SportabzeichenParticipant $participant): self
+    {
+        $this->participant = $participant;
+        return $this;
+    }
+
+    public function getResults(): Collection
+    {
+        return $this->results;
+    }
+
+    public function __toString(): string
+    {
+        return $this->participant->getNachname() . ', ' . $this->participant->getVorname();
+    }
 }
