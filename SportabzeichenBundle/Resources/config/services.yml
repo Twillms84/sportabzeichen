@@ -15,7 +15,7 @@ services:
 
     PulsR\SportabzeichenBundle\Crud\:
         resource: '../../Crud/*'
-        arguments:
-          $objectManager: '@IServ\CrudBundle\Doctrine\ORM\ORMObjectManager'
         public: true
         tags: ['iserv.crud']
+        autowire: true
+        autoconfigure: true

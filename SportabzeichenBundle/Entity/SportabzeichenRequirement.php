@@ -8,57 +8,99 @@ use Doctrine\ORM\Mapping as ORM;
 use IServ\CrudBundle\Entity\CrudInterface;
 
 /**
- * @ORM\Entity
- * @ORM\Table(name="sportabzeichen_requirements")
+ * Anforderungen des Deutschen Sportabzeichens
+ * für ein bestimmtes Jahr, eine Altersklasse,
+ * ein Geschlecht, eine Kategorie und eine Disziplin.
  */
+#[ORM\Entity]
+#[ORM\Table(name: "sportabzeichen_requirements")]
 class SportabzeichenRequirement implements CrudInterface
 {
-    /**
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     * @ORM\Column(type="integer")
-     */
+    public const GESCHLECHT_MALE   = 'MALE';
+    public const GESCHLECHT_FEMALE = 'FEMALE';
+    public const GESCHLECHT_DIVERS = 'DIVERS';
+
+    public const BERECHNUNG_GREATER = 'GREATER'; // Leistung > Grenzwert
+    public const BERECHNUNG_LOWER   = 'LOWER';   // Leistung < Grenzwert
+    public const BERECHNUNG_EQUAL   = 'EQUAL';   // Leistung == Grenzwert
+
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: "integer")]
     private int $id;
 
-    /** @ORM\Column(type="integer") */
+    /** Jahr des Kataloges (z.B. 2024) */
+    #[ORM\Column(type: "integer")]
     private int $jahr;
 
-    /** @ORM\Column(type="text") */
+    /**
+     * Altersklasse-Codes AC0607, AC0809, AC1011 ...
+     * Wird NICHT berechnet – kommt aus der DOSB-Katalog-Definition.
+     */
+    #[ORM\Column(type: "string")]
     private string $altersklasse;
 
-    /** @ORM\Column(type="text") */
+    /** MALE, FEMALE, DIVERS */
+    #[ORM\Column(type: "string")]
     private string $geschlecht;
 
-    /** @ORM\Column(type="integer") */
+    /**
+     * Auswahlnummer:
+     * Wird zur Sortierung im Dropdown verwendet!!
+     *
+     * Beispiel:
+     * - Ausdauer  → 4
+     * - Kraft     → 3
+     * - Schnelligkeit → 2
+     * - Koordination → 1
+     */
+    #[ORM\Column(type: "integer")]
     private int $auswahlnummer;
 
-    /** @ORM\Column(type="text") */
+    /** konkrete Disziplin (z. B. „Weitsprung“, „100m Sprint“) */
+    #[ORM\Column(type: "string")]
     private string $disziplin;
 
-    /** @ORM\Column(type="text") */
+    /**
+     * Kategorie der Disziplin:
+     * z. B. "Laufen", "Springen", "Wurf", "Schwimmen"
+     */
+    #[ORM\Column(type: "string")]
     private string $kategorie;
 
-    /** @ORM\Column(type="float", nullable=true) */
+    /** Grenzwert für Bronze */
+    #[ORM\Column(type: "float", nullable: true)]
     private ?float $bronze = null;
 
-    /** @ORM\Column(type="float", nullable=true) */
+    /** Grenzwert für Silber */
+    #[ORM\Column(type: "float", nullable: true)]
     private ?float $silber = null;
 
-    /** @ORM\Column(type="float", nullable=true) */
+    /** Grenzwert für Gold */
+    #[ORM\Column(type: "float", nullable: true)]
     private ?float $gold = null;
 
-    /** @ORM\Column(type="text", nullable=true) */
+    /** Einheit: "m", "s", "cm", "Punkte", etc. */
+    #[ORM\Column(type: "string", nullable: true)]
     private ?string $einheit = null;
 
-    /** @ORM\Column(type="boolean", options={"default": false}) */
+    /** Schwimmnachweis für diese Disziplin erforderlich? */
+    #[ORM\Column(type: "boolean", options: ["default" => false])]
     private bool $schwimmnachweis = false;
 
-    /** @ORM\Column(type="text", nullable=true) */
-    private ?string $berechnungsart = 'GREATER';
+    /** GREATER, LOWER oder EQUAL */
+    #[ORM\Column(type: "string", nullable: true)]
+    private ?string $berechnungsart = self::BERECHNUNG_GREATER;
 
     public function __toString(): string
     {
-        return sprintf('%s (%s, %s)', $this->disziplin, $this->altersklasse, $this->geschlecht);
+        return sprintf(
+            '%s (%s, %s, %d)',
+            $this->disziplin,
+            $this->altersklasse,
+            $this->geschlecht,
+            $this->jahr
+        );
     }
 
     // --- GETTER / SETTER ---
@@ -101,3 +143,4 @@ class SportabzeichenRequirement implements CrudInterface
     public function getBerechnungsart(): ?string { return $this->berechnungsart; }
     public function setBerechnungsart(?string $b): self { $this->berechnungsart = $b; return $this; }
 }
+

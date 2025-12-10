@@ -1,0 +1,37 @@
+{% extends "@IServCrud/default.html.twig" %}
+
+{% block title %}Teilnehmer der Prüfung{% endblock %}
+
+{% block body %}
+<h1>Teilnehmer: {{ exam.examName }} ({{ exam.examYear }})</h1>
+
+<a href="{{ path('sportabzeichen_exam_add_participant', {id: exam.id}) }}" class="btn btn-primary mb-3">
+    Teilnehmer hinzufügen
+</a>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>TN-ID</th>
+        <th>Name</th>
+        <th>Alter im Jahr</th>
+        <th>Ergebnisse</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for entry in items %}
+        <tr>
+            <td>{{ entry.id }}</td>
+            <td>{{ entry.participant.vorname }} {{ entry.participant.nachname }}</td>
+            <td>{{ entry.ageYear }} Jahre</td>
+            <td>
+                <a href="{{ path('sportabzeichen_results_for_participant', {ep: entry.id}) }}"
+                   class="btn btn-sm btn-secondary">Ergebnisse</a>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="4">Noch keine Teilnehmer eingetragen.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
