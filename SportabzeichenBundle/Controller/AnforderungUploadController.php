@@ -94,10 +94,14 @@ final class AnforderungUploadController extends AbstractPageController
                             $silber        = $data[8] !== '' ? (float)$data[8] : null;
                             $gold          = $data[9] !== '' ? (float)$data[9] : null;
                             $einheit       = $data[11] !== '' ? $data[11] : null;
-                            $snVal         = strtolower($data[12]);
                             $berechnung    = strtoupper($data[13] ?: 'GREATER');
 
-                            $schwimmnachweis = in_array($snVal, ['true', '1', 'yes', 'y', 't', 'wahr'], true);
+                           $snVal = isset($data[12]) ? strtolower(trim($data[12])) : '';
+
+                           $schwimmnachweis = match ($snVal) {
+                                '1', 'true', 'yes', 'y', 't', 'wahr', 'ja' => true,
+                                default => false,
+                           };
 
                             // Kategorie mappen
                             $kategorie = self::CATEGORY_MAP[$catCode] ?? $catCode;
