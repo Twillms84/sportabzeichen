@@ -95,4 +95,13 @@ class SportabzeichenExam implements CrudInterface
     {
         return $this->examParticipants;
     }
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+    return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeInterface
+    {
+    return $this->updatedAt;
+    }
 }

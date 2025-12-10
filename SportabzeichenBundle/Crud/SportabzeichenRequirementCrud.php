@@ -18,67 +18,55 @@ class SportabzeichenRequirementCrud extends ServiceCrud
         $this->title = _('Anforderungen');
         $this->itemTitle = _('Anforderung');
 
-        // *** CSV-Import steuert die Daten → keine CRUD-Aktionen ***
+        // Anforderungen kommen aus dem CSV-Import → keine manuellen CRUD-Aktionen
         $this->canAdd = false;
         $this->canEdit = false;
         $this->canDelete = false;
     }
 
-    /**
-     * Felder für die Listenansicht
-     */
     public function configureListFields(ListMapper $list): void
     {
         $list
-            ->add('discipline.name', null, [
-                'label' => _('Disziplin')
-            ])
-            ->add('discipline.kategorie', null, [
-                'label' => _('Kategorie')
+            // Zeigt die verknüpfte Disziplin-Entity via __toString()
+            ->add('discipline', null, [
+                'label' => _('Disziplin'),
             ])
             ->add('jahr', null, [
-                'label' => _('Jahr')
+                'label' => _('Jahr'),
             ])
             ->add('altersklasse', null, [
-                'label' => _('Altersklasse')
+                'label' => _('Altersklasse'),
             ])
             ->add('geschlecht', null, [
-                'label' => _('Geschlecht')
+                'label' => _('Geschlecht'),
             ])
             ->add('bronze', null, [
-                'label' => _('Bronze')
+                'label' => _('Bronze'),
             ])
             ->add('silber', null, [
-                'label' => _('Silber')
+                'label' => _('Silber'),
             ])
             ->add('gold', null, [
-                'label' => _('Gold')
+                'label' => _('Gold'),
             ])
             ->add('schwimmnachweis', null, [
-                'label' => _('Schwimmnachweis')
+                'label' => _('Schwimmnachweis'),
             ]);
     }
 
-    /**
-     * Filter für die Tabelle
-     */
     public function configureFilterFields(FilterMapper $filter): void
     {
         $filter
             ->add('jahr', null, [
-                'label' => _('Jahr')
+                'label' => _('Jahr'),
             ])
             ->add('geschlecht', null, [
-                'label' => _('Geschlecht')
+                'label' => _('Geschlecht'),
             ])
             ->add('altersklasse', null, [
-                'label' => _('Altersklasse')
-            ])
-            ->add('discipline.kategorie', null, [
-                'label' => _('Kategorie')
-            ])
-            ->add('discipline.name', null, [
-                'label' => _('Disziplin')
+                'label' => _('Altersklasse'),
             ]);
+        // Wenn du später noch nach Disziplin filtern willst:
+        // ->add('discipline', null, ['label' => _('Disziplin')]);
     }
 }

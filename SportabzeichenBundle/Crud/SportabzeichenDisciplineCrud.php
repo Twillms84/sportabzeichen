@@ -37,4 +37,5 @@ class SportabzeichenDisciplineCrud extends ServiceCrud
             ->add('einheit')
             ->add('berechnungsart');
     }
+    
 }
