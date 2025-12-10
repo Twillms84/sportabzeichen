@@ -7,30 +7,33 @@ namespace PulsR\SportabzeichenBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use IServ\CrudBundle\Entity\CrudInterface;
 
 #[ORM\Entity]
-#[ORM\HasLifecycleCallbacks]
 #[ORM\Table(name: 'sportabzeichen_exams')]
-class SportabzeichenExam
+class SportabzeichenExam implements CrudInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private int $id;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $examName = null;
+
     #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeImmutable $examDate = null;
+    private ?\DateTimeInterface $examDate = null;
 
     #[ORM\Column(type: 'integer')]
     private int $examYear;
 
     #[ORM\Column(type: 'datetimetz')]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: 'datetimetz')]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeInterface $updatedAt;
 
-    #[ORM\OneToMany(mappedBy: 'exam', targetEntity: SportabzeichenExamParticipant::class)]
+    #[ORM\OneToMany(mappedBy: 'exam', targetEntity: SportabzeichenExamParticipant::class, cascade: ['remove'])]
     private Collection $examParticipants;
 
     public function __construct()
@@ -40,21 +43,53 @@ class SportabzeichenExam
         $this->examParticipants = new ArrayCollection();
     }
 
-    #[ORM\PreUpdate]
-    public function onUpdate(): void
+    // --- CrudInterface: REQUIRED ---
+    public function __toString(): string
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        return $this->examName
+            ? $this->examName . ' (' . $this->examYear . ')'
+            : 'Prüfung ' . $this->examYear;
     }
 
-    // GETTER / SETTER …
+    // --- Getter/Setter ---
 
-    public function getId(): int { return $this->id; }
+    public function getId(): int
+    {
+        return $this->id;
+    }
 
-    public function getExamDate(): ?\DateTimeImmutable { return $this->examDate; }
-    public function setExamDate(?\DateTimeImmutable $date): self { $this->examDate = $date; return $this; }
+    public function getExamName(): ?string
+    {
+        return $this->examName;
+    }
 
-    public function getExamYear(): int { return $this->examYear; }
-    public function setExamYear(int $year): self { $this->examYear = $year; return $this; }
+    public function setExamName(?string $name): self
+    {
+        $this->examName = $name;
+        return $this;
+    }
+
+    public function getExamDate(): ?\DateTimeInterface
+    {
+        return $this->examDate;
+    }
+
+    public function setExamDate(?\DateTimeInterface $date): self
+    {
+        $this->examDate = $date;
+        return $this;
+    }
+
+    public function getExamYear(): int
+    {
+        return $this->examYear;
+    }
+
+    public function setExamYear(int $year): self
+    {
+        $this->examYear = $year;
+        return $this;
+    }
 
     public function getExamParticipants(): Collection
     {

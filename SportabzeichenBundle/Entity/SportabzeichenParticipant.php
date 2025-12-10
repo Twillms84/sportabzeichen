@@ -5,20 +5,17 @@ declare(strict_types=1);
 namespace PulsR\SportabzeichenBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use IServ\CrudBundle\Entity\CrudInterface;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'sportabzeichen_participants')]
-class SportabzeichenParticipant
+class SportabzeichenParticipant implements CrudInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    /**
-     * Eindeutige IServ/LDAP-ID
-     * Wird per CSV-Import gesetzt.
-     */
     #[ORM\Column(type: 'text', unique: true)]
     private string $importId;
 
@@ -28,64 +25,62 @@ class SportabzeichenParticipant
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $nachname = null;
 
-    /**
-     * 'm', 'w', 'd'
-     * Ebenfalls per CSV gesetzt.
-     */
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $geschlecht = null;
 
-    /**
-     * Kommt ebenfalls aus dem CSV-Upload.
-     */
     #[ORM\Column(type: 'date', nullable: true)]
-    private ?\DateTimeImmutable $geburtsdatum = null;
+    private ?\DateTimeInterface $geburtsdatum = null;
 
     #[ORM\Column(type: 'datetimetz')]
-    private \DateTimeImmutable $updatedAt;
+    private \DateTimeInterface $updatedAt;
 
     public function __construct()
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
 
-    // --- GETTER & SETTER ---
-
-    public function getId(): int 
-    { 
-        return $this->id; 
-    }
-
-    public function getImportId(): string 
-    { 
-        return $this->importId; 
-    }
-
-    public function setImportId(string $id): self
+    // --- CrudInterface: REQUIRED ---
+    public function __toString(): string
     {
-        $this->importId = $id;
+        return trim(($this->nachname ?? '') . ', ' . ($this->vorname ?? ''));
+    }
+
+    // --- Getter/Setter ---
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getImportId(): string
+    {
+        return $this->importId;
+    }
+
+    public function setImportId(string $importId): self
+    {
+        $this->importId = $importId;
         return $this;
     }
 
-    public function getVorname(): ?string 
+    public function getVorname(): ?string
     {
         return $this->vorname;
     }
 
-    public function setVorname(?string $v): self
+    public function setVorname(?string $vorname): self
     {
-        $this->vorname = $v;
+        $this->vorname = $vorname;
         return $this;
     }
 
-    public function getNachname(): ?string 
+    public function getNachname(): ?string
     {
         return $this->nachname;
     }
 
-    public function setNachname(?string $n): self
+    public function setNachname(?string $nachname): self
     {
-        $this->nachname = $n;
+        $this->nachname = $nachname;
         return $this;
     }
 
@@ -94,36 +89,25 @@ class SportabzeichenParticipant
         return $this->geschlecht;
     }
 
-    public function setGeschlecht(?string $g): self
+    public function setGeschlecht(?string $geschlecht): self
     {
-        $this->geschlecht = $g;
+        $this->geschlecht = $geschlecht;
         return $this;
     }
 
-    public function getGeburtsdatum(): ?\DateTimeImmutable 
+    public function getGeburtsdatum(): ?\DateTimeInterface
     {
         return $this->geburtsdatum;
     }
 
-    public function setGeburtsdatum(?\DateTimeImmutable $d): self
+    public function setGeburtsdatum(?\DateTimeInterface $date): self
     {
-        $this->geburtsdatum = $d;
+        $this->geburtsdatum = $date;
         return $this;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable 
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $dt): self
-    {
-        $this->updatedAt = $dt;
-        return $this;
-    }
-
-    public function __toString(): string
-    {
-        return trim(($this->nachname ?? '') . ' ' . ($this->vorname ?? ''));
     }
 }
