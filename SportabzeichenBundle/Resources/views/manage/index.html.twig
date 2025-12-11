@@ -1,72 +1,49 @@
-{% extends "@IServCore/page.html.twig" %}
+{% extends '@IServCore/page.html.twig' %}
 
-{% block page_title %}
-    {{ title }}
+{% block title %}
+  Sportabzeichen – Verwaltung
 {% endblock %}
 
-{% block page_content %}
-<div class="content">
-    <h2 class="mb-4">{{ title }}</h2>
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-    <div class="row g-3">
+            <h1 class="mb-4">
+                <i class="fa fa-cog"></i> Sportabzeichen – Verwaltung
+            </h1>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h4 class="card-title">🏅 Leistungsanforderungen</h4>
-                    <p>Verwalte die Disziplinen, Jahrgänge und Altersklassen.</p>
+            <p>Hier verwaltest du alle administrativen Bereiche des Sportabzeichen-Moduls.</p>
 
-                    <a href="{{ path('crud_sportabzeichenrequirement_index') }}" class="btn btn-primary">
-                        Anforderungen anzeigen
+            <ul class="list-group mb-4">
+
+                <li class="list-group-item">
+                    <a href="{{ path('crud_participant_index') }}">
+                        👥 Teilnehmer verwalten
                     </a>
+                </li>
 
-                    <a href="{{ path('sportabzeichen_admin_upload') }}" class="btn btn-outline-secondary mt-2">
-                        CSV importieren
+                <li class="list-group-item">
+                    <a href="{{ path('crud_sportabzeichenexam_index') }}">
+                        🏁 Prüfungen verwalten
                     </a>
-                </div>
-            </div>
-        </div>
+                </li>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h4 class="card-title">📋 Prüfungen & Teilnehmer</h4>
-                    <p>Prüfungen anlegen, Teilnehmer zuordnen und Leistungen eintragen.</p>
-
-                    <a href="{{ path('crud_sportabzeichenexam_index') }}" class="btn btn-primary">
-                        Prüfungen verwalten
+                <li class="list-group-item">
+                    <a href="{{ path('sportabzeichen_admin_upload') }}">
+                        📥 Anforderungen importieren (CSV)
                     </a>
-                </div>
-            </div>
-        </div>
+                </li>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h4 class="card-title">👥 Teilnehmerdaten</h4>
-                <p>Teilnehmer importieren oder bearbeiten.</p>
+                <li class="list-group-item">
+                    <a href="{{ path('sportabzeichen_default') }}">
+                        🔙 Zur Startseite
+                    </a>
+                </li>
 
-                <a href="{{ path('crud_sportabzeichenparticipant_index') }}" class="btn btn-primary">
-                    Teilnehmer anzeigen
-                </a>
+            </ul>
 
-                <a href="{{ path('sportabzeichen_admin_upload_teilnehmer') }}" class="btn btn-outline-secondary mt-2">
-                    CSV importieren
-                </a>
-            </div>
         </div>
     </div>
-
-    </div>
-
-    <div class="mt-4 p-3 bg-light border rounded">
-        <h5>📊 Systemstatus</h5>
-        <ul class="list-unstyled mb-0">
-            <li>• Prüfungen insgesamt: <strong>{{ stats.exams }}</strong></li>
-            <li>• Teilnehmer im System: <strong>{{ stats.participants }}</strong></li>
-            <li>• Jahrgänge mit Anforderungen: <strong>{{ stats.requirementYears }}</strong></li>
-        </ul>
-    </div>
-
 </div>
 {% endblock %}
