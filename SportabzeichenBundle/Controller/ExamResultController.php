@@ -117,13 +117,14 @@ final class ExamResultController extends AbstractPageController
                 d.kategorie,
                 d.einheit,
                 r.altersklasse,
-                r.geschlecht
+                r.geschlecht,
+                r.auswahlnummer
             FROM sportabzeichen_disciplines d
             JOIN sportabzeichen_requirements r
               ON d.id = r.discipline_id
             WHERE r.jahr = ?
               AND LOWER(d.kategorie) <> 'schwimmen'
-            ORDER BY d.kategorie, d.name
+            ORDER BY d.kategorie, r.auswahlnummer, d.name
         ", [$exam['exam_year']]);
 
         // Gruppieren nach Kategorie
