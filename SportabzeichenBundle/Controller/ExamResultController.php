@@ -71,7 +71,7 @@ final class ExamResultController extends AbstractPageController
             ORDER BY exam_year DESC, exam_date DESC
         ");
 
-        return $this->render('@PulsRSportabzeichen/results/exams.html.twig', [
+        return $this->render('@PulsRSportabzeichen/results/index.html.twig', [
             'exams' => $exams,
         ]);
     }
