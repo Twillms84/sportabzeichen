@@ -9,11 +9,16 @@ use IServ\CrudBundle\Mapper\FormMapper;
 use IServ\CrudBundle\Mapper\ListMapper;
 use IServ\CrudBundle\Mapper\ShowMapper;
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenParticipant;
+use Psr\Container\ContainerInterface;
 
-class ParticipantCrud extends ServiceCrud
+final class ParticipantCrud extends ServiceCrud
 {
-    // Entity muss als statische Property definiert werden
     protected static $entityClass = SportabzeichenParticipant::class;
+
+    public function __construct(ContainerInterface $locator)
+    {
+        parent::__construct($locator);
+    }
 
     protected function configure(): void
     {
@@ -37,18 +42,18 @@ class ParticipantCrud extends ServiceCrud
     public function configureFormFields(FormMapper $form): void
     {
         $form
-            ->add('vorname', null, ['label' => _('Vorname')])
-            ->add('nachname', null, ['label' => _('Nachname')])
-            ->add('geschlecht', null, ['label' => _('Geschlecht')])
-            ->add('geburtsdatum', null, ['label' => _('Geburtsdatum')]);
+            ->add('vorname')
+            ->add('nachname')
+            ->add('geschlecht')
+            ->add('geburtsdatum');
     }
 
     public function configureShowFields(ShowMapper $show): void
     {
         $show
-            ->add('vorname', null, ['label' => _('Vorname')])
-            ->add('nachname', null, ['label' => _('Nachname')])
-            ->add('geschlecht', null, ['label' => _('Geschlecht')])
-            ->add('geburtsdatum', 'date', ['label' => _('Geburtsdatum')]);
+            ->add('vorname')
+            ->add('nachname')
+            ->add('geschlecht')
+            ->add('geburtsdatum', 'date');
     }
 }

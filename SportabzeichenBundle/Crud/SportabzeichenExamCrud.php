@@ -8,11 +8,18 @@ use IServ\CrudBundle\Crud\ServiceCrud;
 use IServ\CrudBundle\Mapper\FormMapper;
 use IServ\CrudBundle\Mapper\ListMapper;
 use IServ\CrudBundle\Mapper\ShowMapper;
-use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 
-class SportabzeichenExamCrud extends ServiceCrud
+use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
+use Psr\Container\ContainerInterface;
+
+final class SportabzeichenExamCrud extends ServiceCrud
 {
     protected static $entityClass = SportabzeichenExam::class;
+
+    public function __construct(ContainerInterface $locator)
+    {
+        parent::__construct($locator);
+    }
 
     protected function configure(): void
     {
@@ -27,7 +34,7 @@ class SportabzeichenExamCrud extends ServiceCrud
     public function configureListFields(ListMapper $list): void
     {
         $list
-            ->addIdentifier('examName', null, ['label' => _('Name')])
+            ->addIdentifier('examName', null, ['label' => _('Bezeichnung')])
             ->add('examDate', 'date', ['label' => _('Datum')])
             ->add('examYear', null, ['label' => _('Jahr')])
             ->add('createdAt', 'datetime', ['label' => _('Erstellt am')]);
@@ -36,18 +43,18 @@ class SportabzeichenExamCrud extends ServiceCrud
     public function configureFormFields(FormMapper $form): void
     {
         $form
-            ->add('examName', null, ['label' => _('Name der Prüfung')])
-            ->add('examYear', null, ['label' => _('Jahr')])
-            ->add('examDate', null, ['label' => _('Datum')]);
+            ->add('examName')
+            ->add('examYear')
+            ->add('examDate');
     }
 
     public function configureShowFields(ShowMapper $show): void
     {
         $show
-            ->add('examName', null, ['label' => _('Name')])
-            ->add('examYear', null, ['label' => _('Jahr')])
-            ->add('examDate', 'date', ['label' => _('Datum')])
-            ->add('createdAt', 'datetime', ['label' => _('Erstellt')])
-            ->add('updatedAt', 'datetime', ['label' => _('Zuletzt geändert')]);
+            ->add('examName')
+            ->add('examYear')
+            ->add('examDate', 'date')
+            ->add('createdAt', 'datetime')
+            ->add('updatedAt', 'datetime');
     }
 }
