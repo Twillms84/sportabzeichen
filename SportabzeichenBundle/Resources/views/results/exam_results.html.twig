@@ -14,7 +14,9 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
             <tr>
                 <th>Name</th>
                 <th>Alter</th>
-                {% for category in disciplines['MALE']|keys %}
+
+                {# Kategorien aus dem Controller #}
+                {% for category in categories %}
                     <th>{{ category }}</th>
                 {% endfor %}
             </tr>
@@ -22,18 +24,17 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
         <tbody>
         {% for p in participants %}
-            {% set ak = _self.mapAge(p.age_year) %}
             {% set gender = p.geschlecht %}
+            {% set ak = p.altersklasse %}
 
             <tr>
                 <td>{{ p.vorname }} {{ p.nachname }}</td>
                 <td>{{ p.age_year }}</td>
 
-                {% for category in disciplines[gender][ak]|keys %}
-                    {% set items = disciplines[gender][ak][category] %}
+                {% for category in categories %}
+                    {% set items = disciplines[gender][ak][category]|default([]) %}
 
                     <td>
-
                         <select class="form-select discipline-select"
                                 data-ep="{{ p.ep_id }}">
                             <option value="">(keine Auswahl)</option>
@@ -45,15 +46,18 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                                     {% endif %}
                                 >
                                     {{ d.name }}
-                                    (Bronze: {{ d.bronze }},
-                                     Silber: {{ d.silber }},
-                                     Gold: {{ d.gold }})
+                                    (B: {{ d.bronze }}, S: {{ d.silber }}, G: {{ d.gold }})
                                 </option>
                             {% endfor %}
                         </select>
 
-                        {% set selectedResult = results[p.ep_id]|default([]) %}
-                        {% set value = selectedResult[(items|first).id].leistung|default('') %}
+                        {% set value = '' %}
+                        {% if results[p.ep_id] is defined %}
+                            {# irgendein Ergebnis zu dieser Disziplin, falls vorhanden #}
+                            {% for discId, r in results[p.ep_id] %}
+                                {% set value = r.leistung %}
+                            {% endfor %}
+                        {% endif %}
 
                         <input type="number" step="0.01"
                                class="form-control mt-1 result-input"

@@ -53,7 +53,7 @@ final class ExamResultController extends AbstractPageController
             }
         }
 
-        return "AC2025"; // fallback
+        return "AC2025"; // Fallback
     }
 
     /* --------------------------------------------------------
@@ -106,7 +106,22 @@ final class ExamResultController extends AbstractPageController
             ORDER BY p.nachname, p.vorname
         ", [$examId]);
 
-        // Disziplinen + Anforderungen laden
+        // Geschlecht normalisieren & Altersklasse berechnen
+        foreach ($participants as &$p) {
+            $g = strtoupper((string) $p['geschlecht']);
+            if (in_array($g, ['M', 'MALE', 'MÄNNLICH'], true)) {
+                $p['geschlecht'] = 'MALE';
+            } elseif (in_array($g, ['W', 'F', 'FEMALE', 'WEIBLICH'], true)) {
+                $p['geschlecht'] = 'FEMALE';
+            } else {
+                $p['geschlecht'] = 'OTHER';
+            }
+
+            $p['altersklasse'] = $this->mapAgeToAltersklasse((int)$p['age_year']);
+        }
+        unset($p);
+
+        // Disziplinen + Anforderungen laden (Schwimmen ausgeschlossen)
         $rows = $conn->fetchAllAssociative("
             SELECT 
                 d.id AS discipline_id,
@@ -114,10 +129,12 @@ final class ExamResultController extends AbstractPageController
                 d.kategorie,
                 d.einheit,
                 d.berechnungsart,
-
                 r.altersklasse,
-                r.geschlecht,
-
+                CASE
+                    WHEN r.geschlecht IN ('M','MALE','MÄNNLICH') THEN 'MALE'
+                    WHEN r.geschlecht IN ('W','F','FEMALE','WEIBLICH') THEN 'FEMALE'
+                    ELSE r.geschlecht
+                END AS geschlecht,
                 r.bronze,
                 r.silber,
                 r.gold
@@ -131,15 +148,25 @@ final class ExamResultController extends AbstractPageController
 
         // Gruppieren nach Geschlecht → Altersklasse → Kategorie
         $disciplines = [];
+        $categories = [];
+
         foreach ($rows as $r) {
-            $disciplines[$r['geschlecht']][$r['altersklasse']][$r['kategorie']][] = [
-                'id'            => $r['discipline_id'],
-                'name'          => $r['name'],
-                'einheit'       => $r['einheit'],
-                'berechnungsart'=> $r['berechnungsart'],
-                'bronze'        => $r['bronze'],
-                'silber'        => $r['silber'],
-                'gold'          => $r['gold'],
+            $gender = $r['geschlecht'];
+            $ak     = $r['altersklasse'];
+            $cat    = $r['kategorie'];
+
+            if (!in_array($cat, $categories, true)) {
+                $categories[] = $cat;
+            }
+
+            $disciplines[$gender][$ak][$cat][] = [
+                'id'             => $r['discipline_id'],
+                'name'           => $r['name'],
+                'einheit'        => $r['einheit'],
+                'berechnungsart' => $r['berechnungsart'],
+                'bronze'         => $r['bronze'],
+                'silber'         => $r['silber'],
+                'gold'           => $r['gold'],
             ];
         }
 
@@ -161,6 +188,7 @@ final class ExamResultController extends AbstractPageController
             'exam'        => $exam,
             'participants'=> $participants,
             'disciplines' => $disciplines,
+            'categories'  => $categories,
             'results'     => $results,
         ]);
     }
@@ -173,9 +201,9 @@ final class ExamResultController extends AbstractPageController
     {
         $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
 
-        $epId = (int)$request->request->get('ep_id');
+        $epId         = (int)$request->request->get('ep_id');
         $disciplineId = (int)$request->request->get('discipline_id');
-        $leistungRaw = $request->request->get('leistung');
+        $leistungRaw  = $request->request->get('leistung');
 
         $leistung = ($leistungRaw === '' || $leistungRaw === null)
             ? null
@@ -195,10 +223,18 @@ final class ExamResultController extends AbstractPageController
         }
 
         $age        = (int)$ep['age_year'];
-        $geschlecht = $ep['geschlecht'];
-        $jahr       = (int)$ep['exam_year'];
+        $geschlechtRaw = strtoupper((string)$ep['geschlecht']);
 
-        $ak = $this->mapAgeToAltersklasse($age);
+        if (in_array($geschlechtRaw, ['M', 'MALE', 'MÄNNLICH'], true)) {
+            $geschlecht = 'MALE';
+        } elseif (in_array($geschlechtRaw, ['W', 'F', 'FEMALE', 'WEIBLICH'], true)) {
+            $geschlecht = 'FEMALE';
+        } else {
+            $geschlecht = $geschlechtRaw;
+        }
+
+        $jahr = (int)$ep['exam_year'];
+        $ak   = $this->mapAgeToAltersklasse($age);
 
         // Anforderungen zur Disziplin laden
         $req = $conn->fetchAssociative("
@@ -210,18 +246,18 @@ final class ExamResultController extends AbstractPageController
               AND geschlecht = ?
         ", [$disciplineId, $jahr, $ak, $geschlecht]);
 
-        $stufe = null;
+        $stufe  = null;
         $points = null;
 
         if ($leistung !== null && $req) {
             if ($req['berechnungsart'] === 'GREATER') {
-                if ($leistung >= $req['gold'])   { $stufe = 'Gold'; $points = 3; }
-                elseif ($leistung >= $req['silber']) { $stufe = 'Silber'; $points = 2; }
-                elseif ($leistung >= $req['bronze']) { $stufe = 'Bronze'; $points = 1; }
-            } else {
-                if ($leistung <= $req['gold'])   { $stufe = 'Gold'; $points = 3; }
-                elseif ($leistung <= $req['silber']) { $stufe = 'Silber'; $points = 2; }
-                elseif ($leistung <= $req['bronze']) { $stufe = 'Bronze'; $points = 1; }
+                if ($leistung >= $req['gold'])        { $stufe = 'Gold';   $points = 3; }
+                elseif ($leistung >= $req['silber'])  { $stufe = 'Silber'; $points = 2; }
+                elseif ($leistung >= $req['bronze'])  { $stufe = 'Bronze'; $points = 1; }
+            } else { // LOWER
+                if ($leistung <= $req['gold'])        { $stufe = 'Gold';   $points = 3; }
+                elseif ($leistung <= $req['silber'])  { $stufe = 'Silber'; $points = 2; }
+                elseif ($leistung <= $req['bronze'])  { $stufe = 'Bronze'; $points = 1; }
             }
         }
 
