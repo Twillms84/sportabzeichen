@@ -66,6 +66,7 @@ final class Version20250218000100 extends AbstractMigration
                 id              SERIAL PRIMARY KEY,
                 discipline_id   INT NOT NULL REFERENCES sportabzeichen_disciplines(id) ON DELETE CASCADE,
                 jahr            INT NOT NULL,
+                auswahlnummer   INT NOT NULL,
                 altersklasse    TEXT NOT NULL,
                 geschlecht      TEXT NOT NULL,
                 bronze          DOUBLE PRECISION,

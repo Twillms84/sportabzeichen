@@ -131,6 +131,10 @@ final class ExamResultController extends AbstractPageController
         foreach ($disciplineRows as $row) {
             $disciplines[$row['kategorie']][] = $row;
         }
+        foreach ($disciplines as &$items) {
+            usort($items, fn($a, $b) => ($a['auswahlnummer'] <=> $b['auswahlnummer']));
+        }
+        unset($items);
 
         // Ergebnisse laden
         $resultsRaw = $conn->fetchAllAssociative("

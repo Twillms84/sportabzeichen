@@ -136,16 +136,17 @@ final class AnforderungUploadController extends AbstractPageController
                             $sql = "
                                 INSERT INTO sportabzeichen_requirements
                                     (discipline_id, jahr, altersklasse, geschlecht,
-                                     bronze, silber, gold, schwimmnachweis)
+                                     bronze, silber, gold, schwimmnachweis, auswahlnummer)
                                 VALUES
                                     (:discipline_id, :jahr, :ak, :g,
-                                     :bronze, :silber, :gold, :sn)
+                                     :bronze, :silber, :gold, :sn, :auswahl)
                                 ON CONFLICT (discipline_id, jahr, altersklasse, geschlecht)
                                 DO UPDATE SET
                                     bronze = EXCLUDED.bronze,
                                     silber = EXCLUDED.silber,
                                     gold = EXCLUDED.gold,
                                     schwimmnachweis = EXCLUDED.schwimmnachweis
+                                    auswahlnummer = EXCLUDED.auswahlnummer
                             ";
 
                             $values = [
@@ -157,6 +158,8 @@ final class AnforderungUploadController extends AbstractPageController
                                 'silber'        => $silber,
                                 'gold'          => $gold,
                                 'sn'            => (bool)$schwimmnachweis,
+                                'auswahl'       => (int)$auswahlnummer,
+
                             ];
 
                             $types = [
@@ -168,6 +171,7 @@ final class AnforderungUploadController extends AbstractPageController
                                 'silber'        => \PDO::PARAM_STR,
                                 'gold'          => \PDO::PARAM_STR,
                                 'sn'            => \PDO::PARAM_BOOL,
+                                'auswahl'       => \PDO::PARAM_INT,
                             ];
 
                             $conn->executeStatement($sql, $values, $types);

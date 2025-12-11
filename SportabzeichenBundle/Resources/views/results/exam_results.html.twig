@@ -81,12 +81,6 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 <td>{{ p.age_year }}</td>
 
                 {% for category, items in disciplines %}
-                <!-- Kategorie: {{ category }} -->
-                    {% for d in items %}
-                        <!-- Discipline {{ d.id }}: {{ d.name }} / {{ d.altersklasse }} / {{ d.geschlecht }} -->
-                    {% endfor %}
-                {% endfor %}
-                {% for category, items in disciplines %}
                     <td>
 
                         {# DISCIPLINE DROPDOWN für diese Kategorie #}
@@ -99,10 +93,10 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                                     <option value="{{ d.id }}"
                                         {% if results[p.ep_id][d.id] is defined %}
                                             selected
+                                        {% elseif d.auswahlnummer == 1 %}
+                                            selected
                                         {% endif %}
                                     >
-                                        {{ d.name }}
-                                    </option>
                                 {% endif %}
                             {% endfor %}
                         </select>
