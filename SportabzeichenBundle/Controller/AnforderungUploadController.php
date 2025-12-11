@@ -145,7 +145,7 @@ final class AnforderungUploadController extends AbstractPageController
                                     bronze = EXCLUDED.bronze,
                                     silber = EXCLUDED.silber,
                                     gold = EXCLUDED.gold,
-                                    schwimmnachweis = EXCLUDED.schwimmnachweis
+                                    schwimmnachweis = EXCLUDED.schwimmnachweis,
                                     auswahlnummer = EXCLUDED.auswahlnummer
                             ";
 
