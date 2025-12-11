@@ -11,6 +11,20 @@
     Teilnehmer hinzufügen
 </a>
 
+<form method="post"
+      action="{{ path('sportabzeichen_exam_auto_add_participants', { id: exam.id }) }}"
+      onsubmit="return confirm('Alle fehlenden Teilnehmer automatisch hinzufügen?');">
+
+    <button class="btn btn-warning mb-3">
+        🔄 Fehlende automatisch hinzufügen
+    </button>
+</form>
+
+<a href="{{ path('sportabzeichen_exam_add_participant', { id: exam.id }) }}"
+   class="btn btn-primary mb-3 ms-2">
+    ➕ Manuell hinzufügen
+</a>
+
 <table class="table table-striped">
     <thead>
     <tr>

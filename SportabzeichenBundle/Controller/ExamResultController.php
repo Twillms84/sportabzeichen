@@ -122,4 +122,60 @@ final class ExamResultController extends AbstractPageController
     {
         // (bleibt unverändert wie bei dir)
     }
+
+        /**
+     * Alle fehlenden Teilnehmer automatisch zur Prüfung hinzufügen
+     */
+    #[Route('/{id}/participants/auto-add', name: 'auto_add_participants', methods: ['POST'])]
+    public function autoAddParticipants(int $id, Connection $conn): Response
+    {
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+
+        // Prüfung laden
+        $exam = $conn->fetchAssociative("SELECT * FROM sportabzeichen_exams WHERE id = ?", [$id]);
+        if (!$exam) {
+            throw $this->createNotFoundException("Prüfung nicht gefunden");
+        }
+
+        // Alle Schüler laden, die überhaupt als Teilnehmer existieren können
+        $all = $conn->fetchAllAssociative("
+            SELECT id, geburtsdatum
+            FROM sportabzeichen_participants
+            WHERE geschlecht IS NOT NULL
+            AND geburtsdatum IS NOT NULL
+        ");
+
+        // Bereits eingetragene Teilnehmer
+        $existing = $conn->fetchFirstColumn("
+            SELECT participant_id
+            FROM sportabzeichen_exam_participants
+            WHERE exam_id = ?
+        ", [$id]);
+
+        $added = 0;
+
+        foreach ($all as $p) {
+
+            if (in_array($p['id'], $existing)) {
+                continue; // schon drin → überspringen
+            }
+
+            // Alter berechnen
+            $birthYear = (int)date('Y', strtotime($p['geburtsdatum']));
+            $ageYear = (int)$exam['exam_year'] - $birthYear;
+
+            // Einfügen
+            $conn->insert('sportabzeichen_exam_participants', [
+                'exam_id'       => $id,
+                'participant_id'=> $p['id'],
+                'age_year'      => $ageYear,
+            ]);
+
+            $added++;
+        }
+
+        $this->addFlash('success', "$added Teilnehmer automatisch hinzugefügt.");
+
+        return $this->redirectToRoute('sportabzeichen_exam_participants', ['id' => $id]);
+        }
 }
