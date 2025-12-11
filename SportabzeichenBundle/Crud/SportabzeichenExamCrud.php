@@ -16,9 +16,10 @@ final class SportabzeichenExamCrud extends ServiceCrud
 {
     protected static $entityClass = SportabzeichenExam::class;
 
-    public function __construct(ContainerInterface $locator)
+    public function __construct(ContainerInterface $locator, ObjectManagerInterface $objectManager)
     {
         parent::__construct($locator);
+        $this->objectManager = $objectManager;
     }
 
     protected function configure(): void

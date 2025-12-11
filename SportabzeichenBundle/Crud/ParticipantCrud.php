@@ -15,9 +15,10 @@ final class ParticipantCrud extends ServiceCrud
 {
     protected static $entityClass = SportabzeichenParticipant::class;
 
-    public function __construct(ContainerInterface $locator)
+    public function __construct(ContainerInterface $locator, ObjectManagerInterface $objectManager)
     {
         parent::__construct($locator);
+        $this->objectManager = $objectManager;
     }
 
     protected function configure(): void
