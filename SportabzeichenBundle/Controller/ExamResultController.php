@@ -14,19 +14,6 @@ use Symfony\Component\Routing\Annotation\Route;
 final class ExamResultController extends AbstractPageController
 {
     /* --------------------------------------------------------
-     * Hilfsfunktion: IServ-Klassen laden
-     * -------------------------------------------------------- */
-    private function loadClasses(Connection $conn): array
-    {
-        return $conn->fetchAllAssociative("
-            SELECT g.id, g.name
-            FROM iserv_group g
-            WHERE g.type = 'class'
-            ORDER BY g.name
-        ");
-    }
-
-    /* --------------------------------------------------------
      * Altersklasse bestimmen
      * -------------------------------------------------------- */
     private function mapAgeToAltersklasse(int $age): string
@@ -61,11 +48,25 @@ final class ExamResultController extends AbstractPageController
                 return $label;
             }
         }
+
         return "AC2024";
     }
 
     /* --------------------------------------------------------
-     * 1️⃣ Übersicht Prüfungen
+     * Klassen laden (aus users.auxinfo)
+     * -------------------------------------------------------- */
+    private function loadClasses(Connection $conn): array
+    {
+        return $conn->fetchAllAssociative("
+            SELECT DISTINCT auxinfo AS klasse
+            FROM users
+            WHERE auxinfo IS NOT NULL AND auxinfo <> ''
+            ORDER BY auxinfo
+        ");
+    }
+
+    /* --------------------------------------------------------
+     * Auswahl der Prüfung
      * -------------------------------------------------------- */
     #[Route('/', name: 'exams', methods: ['GET'])]
     public function examSelection(Connection $conn): Response
@@ -84,14 +85,14 @@ final class ExamResultController extends AbstractPageController
     }
 
     /* --------------------------------------------------------
-     * 2️⃣ Ergebnisse eingeben
+     * Ergebnisse eingeben
      * -------------------------------------------------------- */
     #[Route('/exam/{examId}', name: 'index', methods: ['GET'])]
     public function index(int $examId, Request $request, Connection $conn): Response
     {
         $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
 
-        // Prüfung laden
+        // Prüfung
         $exam = $conn->fetchAssociative("
             SELECT *
             FROM sportabzeichen_exams
@@ -102,51 +103,46 @@ final class ExamResultController extends AbstractPageController
             throw $this->createNotFoundException("Prüfung nicht gefunden.");
         }
 
-        /* --------------------------------------------------------
-         * Klassenfilter
-         * -------------------------------------------------------- */
-        $selectedClass = $request->query->get('class');
+        // Klassen laden
         $classes = $this->loadClasses($conn);
+        $selectedClass = $request->query->get('class');
 
-        $participants = [];
-
+        /* --------------------------------------------------------
+         * Teilnehmer laden – optional nach Klasse gefiltert
+         * -------------------------------------------------------- */
         if ($selectedClass) {
-            // Benutzer (Usernames) der Klasse holen
-            $usernames = $conn->fetchFirstColumn("
-                SELECT u.username
-                FROM iserv_user u
-                JOIN iserv_group_member gm ON gm.user_id = u.id
-                JOIN iserv_group g ON g.id = gm.group_id
-                WHERE g.id = ?
-            ", [$selectedClass]);
-
-            if ($usernames) {
-                $participants = $conn->fetchAllAssociative("
-                    SELECT ep.id AS ep_id,
-                           p.vorname, p.nachname, p.geschlecht,
-                           ep.age_year
-                    FROM sportabzeichen_exam_participants ep
-                    JOIN sportabzeichen_participants p ON p.id = ep.participant_id
-                    WHERE ep.exam_id = ?
-                      AND p.import_id = ANY (?)
-                    ORDER BY p.nachname, p.vorname
-                ", [$examId, $usernames]);
-            }
-        } else {
-            // Standard: Alle Teilnehmer
             $participants = $conn->fetchAllAssociative("
                 SELECT ep.id AS ep_id,
-                       p.vorname, p.nachname, p.geschlecht,
-                       ep.age_year
+                       p.vorname,
+                       p.nachname,
+                       p.geschlecht,
+                       ep.age_year,
+                       u.auxinfo AS klasse
                 FROM sportabzeichen_exam_participants ep
                 JOIN sportabzeichen_participants p ON p.id = ep.participant_id
+                JOIN users u ON u.importid = p.import_id
+                WHERE ep.exam_id = ?
+                  AND u.auxinfo = ?
+                ORDER BY p.nachname, p.vorname
+            ", [$examId, $selectedClass]);
+        } else {
+            $participants = $conn->fetchAllAssociative("
+                SELECT ep.id AS ep_id,
+                       p.vorname,
+                       p.nachname,
+                       p.geschlecht,
+                       ep.age_year,
+                       u.auxinfo AS klasse
+                FROM sportabzeichen_exam_participants ep
+                JOIN sportabzeichen_participants p ON p.id = ep.participant_id
+                JOIN users u ON u.importid = p.import_id
                 WHERE ep.exam_id = ?
                 ORDER BY p.nachname, p.vorname
             ", [$examId]);
         }
 
         /* --------------------------------------------------------
-         * Disziplinen + Anforderungen
+         * Disziplinen laden
          * -------------------------------------------------------- */
         $disciplineRows = $conn->fetchAllAssociative("
             SELECT 
@@ -167,10 +163,6 @@ final class ExamResultController extends AbstractPageController
         foreach ($disciplineRows as $row) {
             $disciplines[$row['kategorie']][] = $row;
         }
-        foreach ($disciplines as &$items) {
-            usort($items, fn($a, $b) => ($a['auswahlnummer'] <=> $b['auswahlnummer']));
-        }
-        unset($items);
 
         /* --------------------------------------------------------
          * Ergebnisse laden
@@ -199,17 +191,7 @@ final class ExamResultController extends AbstractPageController
     }
 
     /* --------------------------------------------------------
-     * 4️⃣ Einzel speichern (AJAX)
-     * -------------------------------------------------------- */
-    #[Route('/save', name: 'save', methods: ['POST'])]
-    public function save(Request $request, Connection $conn): Response
-    {
-        return new Response("Not implemented for now");
-        // bleibt unverändert (dein vorhandener Code)
-    }
-
-    /* --------------------------------------------------------
-     * 5️⃣ Massenspeichern – NEUE ROUTE
+     * Massenspeichern
      * -------------------------------------------------------- */
     #[Route('/save-many', name: 'save_many', methods: ['POST'])]
     public function saveMany(Request $request, Connection $conn): Response
