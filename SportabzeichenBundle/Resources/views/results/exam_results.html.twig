@@ -9,87 +9,44 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
     <h2>🏅 Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})</h2>
 
+    {# Klassenfilter #}
     <form method="get" class="mb-3">
-    <label class="fw-bold me-2">Klasse:</label>
+        <label class="fw-bold me-2">Klasse:</label>
 
-    <select name="class" class="form-select w-auto d-inline"
-            onchange="this.form.submit()">
-        <option value="">(Alle Klassen)</option>
-        {% for c in classes %}
-            <option value="{{ c.id }}" {% if selectedClass == c.id %}selected{% endif %}>
-                {{ c.name }}
-            </option>
-        {% endfor %}
-    </select>
-</form>
+        <select name="class" class="form-select w-auto d-inline"
+                onchange="this.form.submit()">
+
+            <option value="">(Alle Klassen)</option>
+
+            {% for c in classes %}
+                <option value="{{ c.klasse }}"
+                    {% if selectedClass == c.klasse %}
+                        selected
+                    {% endif %}
+                >
+                    {{ c.klasse }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </form>
+
 
     <table class="table table-bordered align-middle mt-4">
         <thead>
-            <tr>
-                <th>Name</th>
-                <th>Alter</th>
+        <tr>
+            <th>Name</th>
+            <th>Alter</th>
 
-                {# Kategorien: Ausdauer, Kraft, Koordination, Schnelligkeit usw. #}
-                {% for category, items in disciplines %}
-                    <th>{{ category }}</th>
-                {% endfor %}
-            </tr>
+            {% for category, items in disciplines %}
+                <th>{{ category }}</th>
+            {% endfor %}
+        </tr>
         </thead>
 
         <tbody>
 
         {% for p in participants %}
-            {# Altersklasse aus age_year berechnen #}
-            {% set ak = '' %}
-            {% if p.age_year <= 7 %}
-                {% set ak = 'AC0607' %}
-            {% elseif p.age_year <= 9 %}
-                {% set ak = 'AC0809' %}
-            {% elseif p.age_year <= 11 %}
-                {% set ak = 'AC1011' %}
-            {% elseif p.age_year <= 13 %}
-                {% set ak = 'AC1213' %}
-            {% elseif p.age_year <= 15 %}
-                {% set ak = 'AC1415' %}
-            {% elseif p.age_year <= 17 %}
-                {% set ak = 'AC1617' %}
-            {% elseif p.age_year <= 19 %}
-                {% set ak = 'AC1819' %}
-            {% elseif p.age_year <= 24 %}
-                {% set ak = 'AC2024' %}
-            {% elseif p.age_year <= 29 %}
-                {% set ak = 'AC2529' %}
-            {% elseif p.age_year <= 34 %}
-                {% set ak = 'AC3034' %}
-            {% elseif p.age_year <= 39 %}
-                {% set ak = 'AC3539' %}
-            {% elseif p.age_year <= 44 %}
-                {% set ak = 'AC4044' %}
-            {% elseif p.age_year <= 49 %}
-                {% set ak = 'AC4549' %}
-            {% elseif p.age_year <= 54 %}
-                {% set ak = 'AC5054' %}
-            {% elseif p.age_year <= 59 %}
-                {% set ak = 'AC5559' %}
-            {% elseif p.age_year <= 64 %}
-                {% set ak = 'AC6064' %}
-            {% elseif p.age_year <= 69 %}
-                {% set ak = 'AC6569' %}
-            {% elseif p.age_year <= 74 %}
-                {% set ak = 'AC7074' %}
-            {% elseif p.age_year <= 79 %}
-                {% set ak = 'AC7579' %}
-            {% elseif p.age_year <= 84 %}
-                {% set ak = 'AC8084' %}
-            {% elseif p.age_year <= 89 %}
-                {% set ak = 'AC8589' %}
-            {% else %}
-                {% set ak = 'AC9000' %}
-            {% endif %}
-
-            {% set g = p.geschlecht|lower|trim %}
-            {% set gender = (g starts with 'm') ? 'MALE' : 'FEMALE' %}
-
             <tr>
                 <td>{{ p.vorname }} {{ p.nachname }}</td>
                 <td>{{ p.age_year }}</td>
@@ -97,12 +54,13 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 {% for category, items in disciplines %}
                     <td>
 
-                        {# DISCIPLINE DROPDOWN für diese Kategorie #}
+                        {# Auswahlfeld #}
                         <select class="form-select discipline-select"
                                 data-ep="{{ p.ep_id }}">
                             <option value="">(keine Auswahl)</option>
+
                             {% for d in items %}
-                                {% if d.altersklasse == ak and d.geschlecht == gender %}
+                                {% if d.altersklasse == p.altersklasse and d.geschlecht == p.gender %}
                                     <option value="{{ d.id }}"
                                         {% if results[p.ep_id][d.id] is defined %}
                                             selected
@@ -116,15 +74,9 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                             {% endfor %}
                         </select>
 
-                        {# Leistungswert anzeigen falls schon vorhanden #}
-                        {% set selectedLeistung = '' %}
-                        {% if results[p.ep_id] is defined %}
-                            {% for discId, r in results[p.ep_id] %}
-                                {% if r.discipline_id == (items|first).id %}
-                                    {% set selectedLeistung = r.leistung %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
+                        {# Leistungsfeld #}
+                        {% set disc = (items|filter(i => i.altersklasse == p.altersklasse and i.geschlecht == p.gender))|first %}
+                        {% set selectedLeistung = results[p.ep_id][disc.id].leistung ?? '' %}
 
                         <input type="number" step="0.01"
                                class="form-control mt-1 result-input"
@@ -145,43 +97,45 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
 </div>
 
+
 <script>
 
 //
-// Einzel speichern (läuft weiter wie gehabt)
+// EINZEL SPEICHERN
 //
 document.addEventListener("change", function(e) {
-    if (e.target.classList.contains("result-input")) {
 
-        let ep = e.target.dataset.ep;
-        let leistung = e.target.value;
+    if (!e.target.classList.contains("result-input")) return;
 
-        let select = e.target.closest("td").querySelector(".discipline-select");
-        let discipline = select.value;
+    let ep = e.target.dataset.ep;
+    let leistung = e.target.value;
 
-        if (!discipline) return;
+    let select = e.target.closest("td").querySelector(".discipline-select");
+    let discipline = select.value;
 
-        fetch("{{ path('sportabzeichen_results_save') }}", {
-            method: "POST",
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
-            body: new URLSearchParams({
-                ep_id: ep,
-                discipline_id: discipline,
-                leistung: leistung
-            })
-        });
-    }
+    if (!discipline) return;
+
+    fetch("{{ path('sportabzeichen_results_save') }}", {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: new URLSearchParams({
+            ep_id: ep,
+            discipline_id: discipline,
+            leistung: leistung
+        })
+    });
 });
 
 
 //
-// NEUER MASSENSPEICHERN-CODE
+// MASSENSPEICHERN
 //
 document.getElementById("saveAllBtn").addEventListener("click", function () {
 
     let entries = [];
 
     document.querySelectorAll(".result-input").forEach(input => {
+
         let ep = input.dataset.ep;
         let leistung = input.value;
 
@@ -195,16 +149,16 @@ document.getElementById("saveAllBtn").addEventListener("click", function () {
             discipline_id: discipline,
             leistung: leistung
         });
+
     });
 
     fetch("{{ path('sportabzeichen_results_save_many') }}", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type":"application/json"},
         body: JSON.stringify(entries)
     })
     .then(r => r.json())
     .then(() => alert("Alle Ergebnisse gespeichert!"));
-
 });
 
 </script>

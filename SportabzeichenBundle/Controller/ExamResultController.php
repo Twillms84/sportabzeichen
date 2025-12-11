@@ -48,12 +48,12 @@ final class ExamResultController extends AbstractPageController
                 return $label;
             }
         }
-
         return "AC2024";
     }
 
+
     /* --------------------------------------------------------
-     * Klassen laden (aus users.auxinfo)
+     * Klassen für Filter laden
      * -------------------------------------------------------- */
     private function loadClasses(Connection $conn): array
     {
@@ -65,8 +65,9 @@ final class ExamResultController extends AbstractPageController
         ");
     }
 
+
     /* --------------------------------------------------------
-     * Auswahl der Prüfung
+     * 1️⃣ Übersicht Prüfungen
      * -------------------------------------------------------- */
     #[Route('/', name: 'exams', methods: ['GET'])]
     public function examSelection(Connection $conn): Response
@@ -84,15 +85,16 @@ final class ExamResultController extends AbstractPageController
         ]);
     }
 
+
     /* --------------------------------------------------------
-     * Ergebnisse eingeben
+     * 2️⃣ Ergebnisse eingeben
      * -------------------------------------------------------- */
     #[Route('/exam/{examId}', name: 'index', methods: ['GET'])]
     public function index(int $examId, Request $request, Connection $conn): Response
     {
         $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
 
-        // Prüfung
+        // Prüfung laden
         $exam = $conn->fetchAssociative("
             SELECT *
             FROM sportabzeichen_exams
@@ -103,19 +105,16 @@ final class ExamResultController extends AbstractPageController
             throw $this->createNotFoundException("Prüfung nicht gefunden.");
         }
 
-        // Klassen laden
-        $classes = $this->loadClasses($conn);
+        /* ------------------------------
+         * Klassenfilter anwenden
+         * ------------------------------ */
         $selectedClass = $request->query->get('class');
+        $classes = $this->loadClasses($conn);
 
-        /* --------------------------------------------------------
-         * Teilnehmer laden – optional nach Klasse gefiltert
-         * -------------------------------------------------------- */
         if ($selectedClass) {
             $participants = $conn->fetchAllAssociative("
                 SELECT ep.id AS ep_id,
-                       p.vorname,
-                       p.nachname,
-                       p.geschlecht,
+                       p.vorname, p.nachname, p.geschlecht,
                        ep.age_year,
                        u.auxinfo AS klasse
                 FROM sportabzeichen_exam_participants ep
@@ -128,9 +127,7 @@ final class ExamResultController extends AbstractPageController
         } else {
             $participants = $conn->fetchAllAssociative("
                 SELECT ep.id AS ep_id,
-                       p.vorname,
-                       p.nachname,
-                       p.geschlecht,
+                       p.vorname, p.nachname, p.geschlecht,
                        ep.age_year,
                        u.auxinfo AS klasse
                 FROM sportabzeichen_exam_participants ep
@@ -141,18 +138,22 @@ final class ExamResultController extends AbstractPageController
             ", [$examId]);
         }
 
-        /* --------------------------------------------------------
-         * Disziplinen laden
-         * -------------------------------------------------------- */
-        $disciplineRows = $conn->fetchAllAssociative("
-            SELECT 
-                d.id,
-                d.name,
-                d.kategorie,
-                d.einheit,
-                r.altersklasse,
-                r.geschlecht,
-                r.auswahlnummer
+        /* ------------------------------
+         * Altersklasse & Geschlecht vorbereiten
+         * ------------------------------ */
+        foreach ($participants as &$pp) {
+            $pp['altersklasse'] = $this->mapAgeToAltersklasse((int)$pp['age_year']);
+            $g = strtolower(trim($pp['geschlecht']));
+            $pp['gender'] = ($g === 'm' || $g === 'male') ? 'MALE' : 'FEMALE';
+        }
+        unset($pp);
+
+        /* ------------------------------
+         * Disziplinen + Anforderungen
+         * ------------------------------ */
+        $rows = $conn->fetchAllAssociative("
+            SELECT d.id, d.name, d.kategorie, d.einheit,
+                   r.altersklasse, r.geschlecht, r.auswahlnummer
             FROM sportabzeichen_disciplines d
             JOIN sportabzeichen_requirements r ON d.id = r.discipline_id
             WHERE r.jahr = ?
@@ -160,13 +161,17 @@ final class ExamResultController extends AbstractPageController
         ", [$exam['exam_year']]);
 
         $disciplines = [];
-        foreach ($disciplineRows as $row) {
+        foreach ($rows as $row) {
             $disciplines[$row['kategorie']][] = $row;
         }
+        foreach ($disciplines as &$items) {
+            usort($items, fn($a, $b) => ($a['auswahlnummer'] <=> $b['auswahlnummer']));
+        }
+        unset($items);
 
-        /* --------------------------------------------------------
+        /* ------------------------------
          * Ergebnisse laden
-         * -------------------------------------------------------- */
+         * ------------------------------ */
         $resultsRaw = $conn->fetchAllAssociative("
             SELECT *
             FROM sportabzeichen_exam_results
@@ -190,28 +195,66 @@ final class ExamResultController extends AbstractPageController
         ]);
     }
 
+
     /* --------------------------------------------------------
-     * Massenspeichern
+     * 3️⃣ Einzel speichern
+     * -------------------------------------------------------- */
+    #[Route('/save', name: 'save', methods: ['POST'])]
+    public function save(Request $request, Connection $conn): Response
+    {
+        $epId         = (int)$request->request->get('ep_id');
+        $disciplineId = (int)$request->request->get('discipline_id');
+        $leistung     = $request->request->get('leistung');
+
+        if ($leistung === '' || $leistung === null) {
+            $leistung = null;
+        } else {
+            $leistung = (float)$leistung;
+        }
+
+        $exists = $conn->fetchOne("
+            SELECT id FROM sportabzeichen_exam_results
+            WHERE ep_id = ? AND discipline_id = ?
+        ", [$epId, $disciplineId]);
+
+        if ($exists) {
+            $conn->update('sportabzeichen_exam_results', [
+                'leistung' => $leistung
+            ], ['id' => $exists]);
+        } else {
+            $conn->insert('sportabzeichen_exam_results', [
+                'ep_id'         => $epId,
+                'discipline_id' => $disciplineId,
+                'leistung'      => $leistung
+            ]);
+        }
+
+        return new Response('OK');
+    }
+
+
+    /* --------------------------------------------------------
+     * 4️⃣ Massenspeichern
      * -------------------------------------------------------- */
     #[Route('/save-many', name: 'save_many', methods: ['POST'])]
     public function saveMany(Request $request, Connection $conn): Response
     {
         $entries = json_decode($request->getContent(), true);
-
-        if (!$entries || !is_array($entries)) {
-            return $this->json(['error' => 'Invalid payload'], 400);
+        if (!$entries) {
+            return $this->json(['error' => 'Invalid'], 400);
         }
 
         foreach ($entries as $e) {
+
             $conn->executeStatement("
                 INSERT INTO sportabzeichen_exam_results (ep_id, discipline_id, leistung)
                 VALUES (:ep, :disc, :leistung)
                 ON CONFLICT (ep_id, discipline_id)
-                  DO UPDATE SET leistung = EXCLUDED.leistung
+                DO UPDATE SET leistung = EXCLUDED.leistung
             ", [
-                'ep'      => (int)$e['ep_id'],
-                'disc'    => (int)$e['discipline_id'],
-                'leistung'=> $e['leistung'],
+                'ep' => (int)$e['ep_id'],
+                'disc' => (int)$e['discipline_id'],
+                'leistung' => $e['leistung'],
             ]);
         }
 
