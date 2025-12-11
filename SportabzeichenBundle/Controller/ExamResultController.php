@@ -233,31 +233,41 @@ final class ExamResultController extends AbstractPageController
     }
 
 
-    /* --------------------------------------------------------
-     * 4️⃣ Massenspeichern
-     * -------------------------------------------------------- */
-    #[Route('/save-many', name: 'save_many', methods: ['POST'])]
-    public function saveMany(Request $request, Connection $conn): Response
+    #[Route('/exam/{examId}/save-all', name: 'save_all', methods: ['POST'])]
+    public function saveAll(int $examId, Request $request, Connection $conn): Response
     {
-        $entries = json_decode($request->getContent(), true);
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
 
-        if (!$entries || !is_array($entries)) {
-            return $this->json(['error' => 'Invalid payload'], 400);
+        $formData = $request->request->all('results');
+
+        if (!$formData) {
+            $this->addFlash('warning', 'Keine Daten empfangen.');
+            return $this->redirectToRoute('sportabzeichen_results_index', ['examId' => $examId]);
         }
 
-        foreach ($entries as $e) {
+        foreach ($formData as $epId => $entry) {
+
+            $disciplineId = $entry['discipline'] ?? null;
+            $leistung     = $entry['leistung'] ?? null;
+
+            if (!$disciplineId) {
+                continue;
+            }
+
             $conn->executeStatement("
                 INSERT INTO sportabzeichen_exam_results (ep_id, discipline_id, leistung)
-                VALUES (:ep, :disc, :leistung)
+                VALUES (:ep, :disc, :l)
                 ON CONFLICT (ep_id, discipline_id)
                 DO UPDATE SET leistung = EXCLUDED.leistung
             ", [
-                'ep'       => (int)$e['ep_id'],
-                'disc'     => (int)$e['discipline_id'],
-                'leistung' => $e['leistung'],
+                'ep'   => (int)$epId,
+                'disc' => (int)$disciplineId,
+                'l'    => ($leistung === '' ? null : (float)$leistung),
             ]);
         }
 
-        return $this->json(['ok' => true]);
+        $this->addFlash('success', 'Alle Ergebnisse gespeichert!');
+
+        return $this->redirectToRoute('sportabzeichen_results_index', ['examId' => $examId]);
     }
 }

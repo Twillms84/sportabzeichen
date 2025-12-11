@@ -5,6 +5,7 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 {% endblock %}
 
 {% block content %}
+
 <div class="container mt-4">
 
     <h2>🏅 Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})</h2>
@@ -17,50 +18,48 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
             <option value="">(Alle Klassen)</option>
             {% for c in classes %}
                 <option value="{{ c.klasse }}"
-                    {% if selectedClass == c.klasse %} selected{% endif %}
+                    {% if selectedClass == c.klasse %}selected{% endif %}
                 >
                     {{ c.klasse }}
                 </option>
             {% endfor %}
         </select>
 
-        <button type="submit" class="btn btn-primary">
-            Filtern
-        </button>
+        <button type="submit" class="btn btn-primary">Filtern</button>
     </form>
 
+    {# Formular für alle Ergebnisse #}
+    <form method="post" action="{{ path('sportabzeichen_results_save_all', {examId: exam.id}) }}">
 
-    <table class="table table-bordered align-middle mt-4">
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Alter</th>
+        <table class="table table-bordered align-middle mt-4">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Alter</th>
 
-            {% for category, items in disciplines %}
-                <th>{{ category }}</th>
-            {% endfor %}
-        </tr>
-        </thead>
+                    {% for category, items in disciplines %}
+                        <th>{{ category }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
 
-        <tbody>
+            <tbody>
+            {% for p in participants %}
+                <tr>
+                    <td>{{ p.vorname }} {{ p.nachname }}</td>
+                    <td>{{ p.age_year }}</td>
 
-        {% for p in participants %}
-            <tr>
-                <td>{{ p.vorname }} {{ p.nachname }}</td>
-                <td>{{ p.age_year }}</td>
+                    {% for category, items in disciplines %}
+                        {% set options = items|filter(i => i.altersklasse == p.altersklasse and i.geschlecht == p.gender) %}
+                        {% set selectedDisc = results[p.ep_id]|keys|first ?? null %}
+                        {% set selectedValue = results[p.ep_id][selectedDisc].leistung ?? '' %}
 
-                {% for category, items in disciplines %}
-                    <td>
-
-                        {# Auswahlfeld #}
-                        <select class="form-select discipline-select"
-                                data-ep="{{ p.ep_id }}">
-                            <option value="">(keine Auswahl)</option>
-
-                            {% for d in items %}
-                                {% if d.altersklasse == p.altersklasse and d.geschlecht == p.gender %}
+                        <td>
+                            <select name="results[{{ p.ep_id }}][discipline]" class="form-select">
+                                <option value="">(keine Auswahl)</option>
+                                {% for d in options %}
                                     <option value="{{ d.id }}"
-                                        {% if results[p.ep_id][d.id] is defined %}
+                                        {% if selectedDisc == d.id %}
                                             selected
                                         {% elseif d.auswahlnummer == 1 %}
                                             selected
@@ -68,36 +67,28 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                                     >
                                         {{ d.name }}
                                     </option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
+                                {% endfor %}
+                            </select>
 
-                        {# Leistungsfeld #}
-                        {% set disc = (items|filter(i => i.altersklasse == p.altersklasse and i.geschlecht == p.gender))|first %}
-                        {% set selectedLeistung = results[p.ep_id][disc.id].leistung ?? '' %}
+                            <input type="number"
+                                   name="results[{{ p.ep_id }}][leistung]"
+                                   step="0.01"
+                                   class="form-control mt-1"
+                                   value="{{ selectedValue }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
 
-                        <input type="number" step="0.01"
-                               class="form-control mt-1 result-input"
-                               data-ep="{{ p.ep_id }}"
-                               value="{{ selectedLeistung }}">
-                    </td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        <div class="text-end mt-3">
+            <button type="submit" class="btn btn-success btn-lg">
+                💾 Alle Ergebnisse speichern
+            </button>
+        </div>
 
-    <div class="text-end mt-3">
-        <button id="saveAllBtn" class="btn btn-success btn-lg">
-            💾 Alle Ergebnisse speichern
-        </button>
-    </div>
+    </form>
 
 </div>
-
-{% endblock %}
-
-{% block javascripts %}
-    {{ parent() }}
-    <script src="{{ asset('modules/PulsRSportabzeichenBundle/js/results.js') }}"></script>
 {% endblock %}
