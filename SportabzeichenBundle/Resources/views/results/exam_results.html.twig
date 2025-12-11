@@ -5,12 +5,13 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 {% endblock %}
 
 {% block content %}
-
 <div class="container mt-4">
 
     <h2>🏅 Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})</h2>
 
-    {# Klassenfilter #}
+    {# -------------------------------------- #}
+    {# Klassenfilter                         #}
+    {# -------------------------------------- #}
     <form method="get" class="mb-3 d-flex align-items-center gap-2">
         <label class="fw-bold me-2 mb-0">Klasse:</label>
 
@@ -25,10 +26,15 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
             {% endfor %}
         </select>
 
-        <button type="submit" class="btn btn-primary">Filtern</button>
+        <button type="submit" class="btn btn-primary">
+            Filtern
+        </button>
     </form>
 
-    {# Formular für alle Ergebnisse #}
+
+    {# ------------------------------------------------------------ #}
+    {# SPEICHER-FORMULAR FÜR ALLE ERGEBNISSE                       #}
+    {# ------------------------------------------------------------ #}
     <form method="post" action="{{ path('sportabzeichen_results_save_all', {examId: exam.id}) }}">
 
         <table class="table table-bordered align-middle mt-4">
@@ -44,28 +50,49 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
             </thead>
 
             <tbody>
+
             {% for p in participants %}
                 <tr>
                     <td>{{ p.vorname }} {{ p.nachname }}</td>
                     <td>{{ p.age_year }}</td>
 
                     {% for category, items in disciplines %}
+
+                        {# Ergebnisse des Schülers (oder leeres Array) #}
                         {% set epResults = results[p.ep_id] ?? {} %}
-                        {% set options = items|filter(i => i.altersklasse == p.altersklasse and i.geschlecht == p.gender) %}
-                        {% set selectedDisc = epResults|keys|first ?? null %}
-                        {% set selectedValue = (selectedDisc and epResults[selectedDisc] is defined)
-                            ? epResults[selectedDisc].leistung
-                            : '' %}
+
+                        {# Filtere Disziplinen nach Alter + Geschlecht #}
+                        {% set options = [] %}
+                        {% for d in items %}
+                            {% if d.altersklasse == p.altersklasse and d.geschlecht == p.gender %}
+                                {% set options = options|merge([d]) %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {# Bestimme ausgewählte Disziplin (falls vorhanden) #}
+                        {% set selectedDisc = null %}
+                        {% for oid, data in epResults %}
+                            {% set selectedDisc = oid %}
+                        {% endfor %}
+
+                        {# Bestimme gespeicherten Leistungswert #}
+                        {% if selectedDisc %}
+                            {% set selectedValue = epResults[selectedDisc].leistung %}
+                        {% else %}
+                            {% set selectedValue = '' %}
+                        {% endif %}
 
                         <td>
+
+                            {# Dropdown Auswahl #}
                             <select name="results[{{ p.ep_id }}][discipline]" class="form-select">
                                 <option value="">(keine Auswahl)</option>
                                 {% for d in options %}
-                                    {% set hasResult = epResults[d.id] is defined %}
+                                    {% set isSelected = (selectedDisc and selectedDisc == d.id) %}
+                                    {% set defaultSelect = (not selectedDisc and d.auswahlnummer == 1) %}
+
                                     <option value="{{ d.id }}"
-                                        {% if hasResult %}
-                                            selected
-                                        {% elseif d.auswahlnummer == 1 %}
+                                        {% if isSelected or defaultSelect %}
                                             selected
                                         {% endif %}
                                     >
@@ -74,16 +101,16 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                                 {% endfor %}
                             </select>
 
+                            {# Leistungs-Eingabefeld #}
                             <input type="number"
-                                name="results[{{ p.ep_id }}][leistung]"
-                                step="0.01"
-                                class="form-control mt-1"
-                                value="{{ selectedValue }}">
+                                   name="results[{{ p.ep_id }}][leistung]"
+                                   step="0.01"
+                                   class="form-control mt-1"
+                                   value="{{ selectedValue }}">
                         </td>
                     {% endfor %}
                 </tr>
             {% endfor %}
-
             </tbody>
         </table>
 
@@ -97,3 +124,4 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
 </div>
 {% endblock %}
+`
