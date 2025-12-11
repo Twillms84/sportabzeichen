@@ -73,6 +73,9 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 {% set ak = 'AC9000' %}
             {% endif %}
 
+            {{ dump(participants) }}
+            {{ dump(disciplines) }}
+
             {% set g = p.geschlecht|lower|trim %}
             {% set gender = (g starts with 'm') ? 'MALE' : 'FEMALE' %}
 
@@ -80,6 +83,12 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 <td>{{ p.vorname }} {{ p.nachname }}</td>
                 <td>{{ p.age_year }}</td>
 
+                {% for category, items in disciplines %}
+                <!-- Kategorie: {{ category }} -->
+                    {% for d in items %}
+                        <!-- Discipline {{ d.id }}: {{ d.name }} / {{ d.altersklasse }} / {{ d.geschlecht }} -->
+                    {% endfor %}
+                {% endfor %}
                 {% for category, items in disciplines %}
                     <td>
 
