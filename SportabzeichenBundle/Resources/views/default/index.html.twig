@@ -1,30 +1,42 @@
 {% extends '@IServCore/page.html.twig' %}
 
 {% block title %}
-  Sportabzeichen Verwaltung
+    Sportabzeichen
 {% endblock %}
 
 {% block content %}
-  <div class="container mt-4">
-      <div class="card shadow-sm">
-          <div class="card-body">
-              <h1 class="mb-3">
-                  <i class="fa fa-medal text-warning"></i> Sportabzeichen Verwaltung
-              </h1>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-              <p>Willkommen im Sportabzeichen-Modul von IServ.</p>
+            <h1 class="mb-3">
+                <i class="fa fa-medal text-warning"></i> Sportabzeichen Verwaltung
+            </h1>
 
-              <ul>
-                  <li>🏅 <a href="{{ path('crud_sportabzeichenexam_index') }}">Ergebnisseingabe</a></li>
-                  <li>📋 <a href="{{ path('sportabzeichen_manage') }}">Modulübersicht</a></li>
-              </ul>
+            <p>Willkommen im Sportabzeichen-Modul von IServ.</p>
 
-              <hr>
+            <ul>
+                {# Prüfungen: Teilnehmer zuordnen + Ergebnisse erfassen #}
+                <li>📋 
+                    <a href="{{ path('sportabzeichen_exam_index') }}">
+                        Prüfungen & Ergebniseingabe
+                    </a>
+                </li>
 
-              <p class="text-muted">
-                  <small>Version 0.1 – Entwickelt von PulsR für IServ</small>
-              </p>
-          </div>
-      </div>
-  </div>
+                {# Zentrale Modulverwaltung (Dashboard) #}
+                <li>⚙️ 
+                    <a href="{{ path('sportabzeichen_manage_index') }}">
+                        Modulübersicht & Administration
+                    </a>
+                </li>
+            </ul>
+
+            <hr>
+
+            <p class="text-muted">
+                <small>Version 0.1 – Entwickelt von PulsR für IServ</small>
+            </p>
+        </div>
+    </div>
+</div>
 {% endblock %}

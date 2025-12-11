@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PulsR\SportabzeichenBundle\Crud;
+
+use IServ\CrudBundle\Crud\AbstractCrud;
+use IServ\CrudBundle\Table\Column\DateColumn;
+use IServ\CrudBundle\Table\Column\NumberColumn;
+use IServ\CrudBundle\Table\Column\TextColumn;
+use IServ\CrudBundle\Table\Action\Row\ActionButton;
+use IServ\CrudBundle\Table\Action\Row\LinkAction;
+use IServ\CrudBundle\Form\Type\DatePickerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
+
+class SportabzeichenExamCrud extends AbstractCrud
+{
+    public function getEntityClass(): string
+    {
+        return SportabzeichenExam::class;
+    }
+
+    public function getTitle(): string
+    {
+        return 'Prüfungen';
+    }
+
+    public function configure(): void
+    {
+        // -------------------------------------------------------
+        // Tabellenübersicht
+        // -------------------------------------------------------
+        $this->addColumn('id', NumberColumn::class, ['label' => 'ID']);
+        $this->addColumn('examName', TextColumn::class, ['label' => 'Bezeichnung']);
+        $this->addColumn('examDate', DateColumn::class, [
+            'label' => 'Datum',
+            'format' => 'd.m.Y'
+        ]);
+        $this->addColumn('examYear', NumberColumn::class, ['label' => 'Jahr']);
+
+        // Teilnehmer-Zähler per Callback
+        $this->addColumn('examParticipants', TextColumn::class, [
+            'label' => 'Teilnehmer',
+            'callback' => fn ($exam) => count($exam->getExamParticipants()),
+        ]);
+
+        // -------------------------------------------------------
+        // Aktionen in der Zeile
+        // -------------------------------------------------------
+        $this->addRowAction(new LinkAction(
+            'Teilnehmer',
+            fn ($exam) => $this->router->generate(
+                'sportabzeichen_exam_participants',
+                ['id' => $exam->getId()]
+            ),
+            'fa fa-users'
+        ));
+
+        $this->addRowAction(new LinkAction(
+            'Ergebnisse',
+            fn ($exam) => $this->router->generate(
+                'sportabzeichen_exam_participants',
+                ['id' => $exam->getId()]
+            ),
+            'fa fa-pencil-alt'
+        ));
+
+        // Standard-Aktionen (Bearbeiten & Löschen)
+        $this->addEditAction();
+        $this->addDeleteAction();
+    }
+
+    // -------------------------------------------------------
+    // Formular Definition
+    // -------------------------------------------------------
+    public function configureFormFields(): void
+    {
+        $this->addFormField('examName', TextType::class, [
+            'label' => 'Bezeichnung',
+            'required' => true,
+        ]);
+
+        $this->addFormField('examDate', DatePickerType::class, [
+            'label' => 'Prüfungsdatum',
+            'required' => false,
+        ]);
+
+        $this->addFormField('examYear', IntegerType::class, [
+            'label' => 'Jahr',
+            'required' => true,
+        ]);
+    }
+
+    // -------------------------------------------------------
+    // Detailseite
+    // -------------------------------------------------------
+    public function configureShowFields(): void
+    {
+        $this->addShowField('id');
+        $this->addShowField('examName');
+        $this->addShowField('examDate');
+        $this->addShowField('examYear');
+        $this->addShowField('createdAt');
+        $this->addShowField('updatedAt');
+    }
+}
