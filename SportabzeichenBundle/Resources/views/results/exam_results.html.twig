@@ -15,54 +15,105 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 <th>Name</th>
                 <th>Alter</th>
 
-                {# Kategorien aus dem Controller #}
-                {% for category in categories %}
+                {# Kategorien: Ausdauer, Kraft, Koordination, Schnelligkeit usw. #}
+                {% for category, items in disciplines %}
                     <th>{{ category }}</th>
                 {% endfor %}
             </tr>
         </thead>
 
         <tbody>
+
         {% for p in participants %}
-            {% set gender = p.geschlecht %}
-            {% set ak = p.altersklasse %}
+            {# Altersklasse aus age_year berechnen #}
+            {% set ak = '' %}
+            {% if p.age_year <= 7 %}
+                {% set ak = 'AC0607' %}
+            {% elseif p.age_year <= 9 %}
+                {% set ak = 'AC0809' %}
+            {% elseif p.age_year <= 11 %}
+                {% set ak = 'AC1011' %}
+            {% elseif p.age_year <= 13 %}
+                {% set ak = 'AC1213' %}
+            {% elseif p.age_year <= 15 %}
+                {% set ak = 'AC1415' %}
+            {% elseif p.age_year <= 17 %}
+                {% set ak = 'AC1617' %}
+            {% elseif p.age_year <= 19 %}
+                {% set ak = 'AC1819' %}
+            {% elseif p.age_year <= 24 %}
+                {% set ak = 'AC2024' %}
+            {% elseif p.age_year <= 29 %}
+                {% set ak = 'AC2529' %}
+            {% elseif p.age_year <= 34 %}
+                {% set ak = 'AC3034' %}
+            {% elseif p.age_year <= 39 %}
+                {% set ak = 'AC3539' %}
+            {% elseif p.age_year <= 44 %}
+                {% set ak = 'AC4044' %}
+            {% elseif p.age_year <= 49 %}
+                {% set ak = 'AC4549' %}
+            {% elseif p.age_year <= 54 %}
+                {% set ak = 'AC5054' %}
+            {% elseif p.age_year <= 59 %}
+                {% set ak = 'AC5559' %}
+            {% elseif p.age_year <= 64 %}
+                {% set ak = 'AC6064' %}
+            {% elseif p.age_year <= 69 %}
+                {% set ak = 'AC6569' %}
+            {% elseif p.age_year <= 74 %}
+                {% set ak = 'AC7074' %}
+            {% elseif p.age_year <= 79 %}
+                {% set ak = 'AC7579' %}
+            {% elseif p.age_year <= 84 %}
+                {% set ak = 'AC8084' %}
+            {% elseif p.age_year <= 89 %}
+                {% set ak = 'AC8589' %}
+            {% else %}
+                {% set ak = 'AC9000' %}
+            {% endif %}
+
+            {% set gender = (p.geschlecht|lower == 'm') ? 'MALE' : 'FEMALE' %}
 
             <tr>
                 <td>{{ p.vorname }} {{ p.nachname }}</td>
                 <td>{{ p.age_year }}</td>
 
-                {% for category in categories %}
-                    {% set items = disciplines[gender][ak][category]|default([]) %}
-
+                {% for category, items in disciplines %}
                     <td>
+
+                        {# DISCIPLINE DROPDOWN für diese Kategorie #}
                         <select class="form-select discipline-select"
                                 data-ep="{{ p.ep_id }}">
                             <option value="">(keine Auswahl)</option>
 
                             {% for d in items %}
-                                <option value="{{ d.id }}"
-                                    {% if results[p.ep_id][d.id] is defined %}
-                                        selected
-                                    {% endif %}
-                                >
-                                    {{ d.name }}
-                                    (B: {{ d.bronze }}, S: {{ d.silber }}, G: {{ d.gold }})
-                                </option>
+                                {% if d.altersklasse == ak and d.geschlecht == gender %}
+                                    <option value="{{ d.id }}"
+                                        {% if results[p.ep_id][d.id] is defined %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ d.name }}
+                                    </option>
+                                {% endif %}
                             {% endfor %}
                         </select>
 
-                        {% set value = '' %}
+                        {# Leistungswert anzeigen falls schon vorhanden #}
+                        {% set selectedLeistung = '' %}
                         {% if results[p.ep_id] is defined %}
-                            {# irgendein Ergebnis zu dieser Disziplin, falls vorhanden #}
                             {% for discId, r in results[p.ep_id] %}
-                                {% set value = r.leistung %}
+                                {% if r.discipline_id == (items|first).id %}
+                                    {% set selectedLeistung = r.leistung %}
+                                {% endif %}
                             {% endfor %}
                         {% endif %}
 
                         <input type="number" step="0.01"
                                class="form-control mt-1 result-input"
                                data-ep="{{ p.ep_id }}"
-                               value="{{ value }}">
+                               value="{{ selectedLeistung }}">
                     </td>
                 {% endfor %}
             </tr>
@@ -103,6 +154,7 @@ document.addEventListener("change", function(e) {
     }
 });
 
+// Globaler „Alle speichern“-Button
 document.getElementById("saveAllBtn").addEventListener("click", function() {
 
     document.querySelectorAll(".result-input").forEach(input => {
