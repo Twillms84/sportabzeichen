@@ -9,9 +9,9 @@
 
     <h2>🏅 Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})</h2>
 
-    {# Klassenfilter #}
+    {# Klassenfilter ------------------------------------------------ #}
     <form method="get" class="mb-3 d-flex align-items-center gap-2">
-        <label class="fw-bold me-2 mb-0">Klasse:</label>
+        <label class="fw-bold mb-0 me-2">Klasse:</label>
 
         <select name="class" class="form-select w-auto d-inline">
             <option value="">(Alle Klassen)</option>
@@ -28,10 +28,11 @@
     </form>
 
 
-    {# FORMULAR FÜR MASSENSPEICHERN #}
-    <form method="post" action="{{ path('sportabzeichen_results_save_all', {examId: exam.id}) }}">
+    {# Ergebnistabelle und Speichern -------------------------------- #}
+    <form action="{{ path('sportabzeichen_results_save_all', {examId: exam.id}) }}"
+          method="post">
 
-        <table class="table table-bordered align-middle mt-4">
+        <table class="table table-bordered align-middle mt-3">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -54,6 +55,7 @@
 
                     {% for category, items in disciplines %}
 
+                        {# passende Disziplinen für diese Kategorie / Geschlecht / Altersklasse #}
                         {% set options = [] %}
                         {% for d in items %}
                             {% if d.altersklasse == p.altersklasse and d.geschlecht == p.gender %}
@@ -61,37 +63,45 @@
                             {% endif %}
                         {% endfor %}
 
-                        {% set selectedDisc = null %}
-                        {% for did, row in epResults %}
-                            {% set selectedDisc = did %}
+                        {# falls Ergebnis existiert → Disziplin bestimmen #}
+                        {% set selectedDiscId = null %}
+                        {% for d in options %}
+                            {% if epResults[d.id] is defined %}
+                                {% set selectedDiscId = d.id %}
+                            {% endif %}
                         {% endfor %}
 
-                        {% if selectedDisc %}
-                            {% set selectedValue = epResults[selectedDisc].leistung %}
-                        {% else %}
-                            {% set selectedValue = '' %}
+                        {# Leistungswert zuordnen #}
+                        {% set selectedValue = '' %}
+                        {% if selectedDiscId and epResults[selectedDiscId] is defined %}
+                            {% set selectedValue = epResults[selectedDiscId].leistung %}
                         {% endif %}
 
                         <td>
-                            <select name="results[{{ p.ep_id }}][discipline]" class="form-select">
+
+                            {# Disziplin-Dropdown #}
+                            <select name="results[{{ p.ep_id }}][{{ category }}][discipline]"
+                                    class="form-select">
+
                                 <option value="">(keine Auswahl)</option>
 
                                 {% for d in options %}
-                                    {% set preselect = (selectedDisc and selectedDisc == d.id) or
-                                                       (not selectedDisc and d.auswahlnummer == 1) %}
-                                    <option value="{{ d.id }}"
-                                        {% if preselect %}selected{% endif %}
-                                    >
+                                    {% set preselect = 
+                                        (selectedDiscId == d.id) 
+                                        or (selectedDiscId is null and d.auswahlnummer == 1)
+                                    %}
+                                    <option value="{{ d.id }}" {% if preselect %}selected{% endif %}>
                                         {{ d.name }}
                                     </option>
                                 {% endfor %}
                             </select>
 
+                            {# Leistungsfeld #}
                             <input type="number"
-                                   name="results[{{ p.ep_id }}][leistung]"
-                                   step="0.01"
-                                   class="form-control mt-1"
-                                   value="{{ selectedValue }}">
+                                name="results[{{ p.ep_id }}][{{ category }}][leistung]"
+                                step="0.01"
+                                class="form-control mt-1"
+                                value="{{ selectedValue }}">
                         </td>
 
                     {% endfor %}
