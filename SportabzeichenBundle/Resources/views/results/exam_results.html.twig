@@ -9,6 +9,20 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
     <h2>🏅 Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})</h2>
 
+    <form method="get" class="mb-3">
+    <label class="fw-bold me-2">Klasse:</label>
+
+    <select name="class" class="form-select w-auto d-inline"
+            onchange="this.form.submit()">
+        <option value="">(Alle Klassen)</option>
+        {% for c in classes %}
+            <option value="{{ c.id }}" {% if selectedClass == c.id %}selected{% endif %}>
+                {{ c.name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
     <table class="table table-bordered align-middle mt-4">
         <thead>
             <tr>
@@ -132,14 +146,17 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 </div>
 
 <script>
-document.addEventListener("change", function(e) {
 
+//
+// Einzel speichern (läuft weiter wie gehabt)
+//
+document.addEventListener("change", function(e) {
     if (e.target.classList.contains("result-input")) {
 
         let ep = e.target.dataset.ep;
         let leistung = e.target.value;
 
-        let select = e.target.parentNode.querySelector(".discipline-select");
+        let select = e.target.closest("td").querySelector(".discipline-select");
         let discipline = select.value;
 
         if (!discipline) return;
@@ -156,32 +173,40 @@ document.addEventListener("change", function(e) {
     }
 });
 
-// Globaler „Alle speichern“-Button
-document.getElementById("saveAllBtn").addEventListener("click", function() {
+
+//
+// NEUER MASSENSPEICHERN-CODE
+//
+document.getElementById("saveAllBtn").addEventListener("click", function () {
+
+    let entries = [];
 
     document.querySelectorAll(".result-input").forEach(input => {
-
         let ep = input.dataset.ep;
         let leistung = input.value;
 
-        let select = input.parentNode.querySelector(".discipline-select");
+        let select = input.closest("td").querySelector(".discipline-select");
         let discipline = select.value;
 
-        if (!discipline) return;
+        if (!discipline || leistung === "") return;
 
-        fetch("{{ path('sportabzeichen_results_save') }}", {
-            method: "POST",
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
-            body: new URLSearchParams({
-                ep_id: ep,
-                discipline_id: discipline,
-                leistung: leistung
-            })
+        entries.push({
+            ep_id: ep,
+            discipline_id: discipline,
+            leistung: leistung
         });
     });
 
-    alert("Alle Ergebnisse wurden gespeichert!");
+    fetch("{{ path('sportabzeichen_results_save_many') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(entries)
+    })
+    .then(r => r.json())
+    .then(() => alert("Alle Ergebnisse gespeichert!"));
+
 });
+
 </script>
 
 {% endblock %}
