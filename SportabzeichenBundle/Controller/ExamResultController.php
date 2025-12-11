@@ -240,20 +240,20 @@ final class ExamResultController extends AbstractPageController
     public function saveMany(Request $request, Connection $conn): Response
     {
         $entries = json_decode($request->getContent(), true);
-        if (!$entries) {
-            return $this->json(['error' => 'Invalid'], 400);
+
+        if (!$entries || !is_array($entries)) {
+            return $this->json(['error' => 'Invalid payload'], 400);
         }
 
         foreach ($entries as $e) {
-
             $conn->executeStatement("
                 INSERT INTO sportabzeichen_exam_results (ep_id, discipline_id, leistung)
                 VALUES (:ep, :disc, :leistung)
                 ON CONFLICT (ep_id, discipline_id)
                 DO UPDATE SET leistung = EXCLUDED.leistung
             ", [
-                'ep' => (int)$e['ep_id'],
-                'disc' => (int)$e['discipline_id'],
+                'ep'       => (int)$e['ep_id'],
+                'disc'     => (int)$e['discipline_id'],
                 'leistung' => $e['leistung'],
             ]);
         }
