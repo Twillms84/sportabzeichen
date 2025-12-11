@@ -1,78 +1,102 @@
-{% extends "@IServCore/page.html.twig" %}
+{% extends '@IServCore/page.html.twig' %}
 
-{% block page_title %}
-Ergebnisse für {{ participant.vorname }} {{ participant.nachname }}
+{% block title %}
+    Ergebnisse für {{ participant.vorname }} {{ participant.nachname }}
 {% endblock %}
 
-{% block page_content %}
-<div class="content">
+{% block content %}
 
-<h2>
-    Ergebnisse: {{ participant.vorname }} {{ participant.nachname }}
-    (Alter: {{ participant.age_year }}, Geschlecht: {{ participant.geschlecht }})
-</h2>
+<div class="container mt-4">
 
-<a href="{{ path('sportabzeichen_exam_participants', { id: examId }) }}"
-   class="btn btn-outline-secondary mb-3">
-    ← Zurück zur Teilnehmerliste
-</a>
+    <h2>
+        <i class="fa fa-pencil-alt"></i>
+        Ergebnisse – {{ participant.vorname }} {{ participant.nachname }}
+    </h2>
 
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Kategorie</th>
-        <th>Disziplin</th>
-        <th>Einheit</th>
-        <th>Leistung</th>
-        <th>Stufe</th>
-        <th>Punkte</th>
-    </tr>
-    </thead>
+    <p>
+        <strong>Geschlecht:</strong> {{ participant.geschlecht }}<br>
+        <strong>Altersjahr:</strong> {{ participant.age_year }}<br>
+        <strong>Prüfungsjahr:</strong> {{ participant.exam_year }}
+    </p>
 
-    <tbody>
-    {% for d in disciplines %}
-        {% set r = results[d.id] ?? null %}
-        <tr>
-            <td>{{ d.kategorie }}</td>
-            <td>{{ d.name }}</td>
-            <td>{{ d.einheit }}</td>
+    <hr>
 
-            <td style="width: 160px;">
-                <input type="number"
-                       step="0.01"
-                       class="form-control result-input"
-                       data-discipline="{{ d.id }}"
-                       value="{{ r.leistung ?? '' }}">
-            </td>
+    <table class="table table-striped results-table">
+        <thead>
+            <tr>
+                <th>Disziplin</th>
+                <th>Kategorie</th>
+                <th>Leistung</th>
+                <th>Einheit</th>
+                <th>Bewertung</th>
+            </tr>
+        </thead>
 
-            <td>{{ r.stufe ?? '-' }}</td>
-            <td>{{ r.points ?? '-' }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+        <tbody>
+        {% for d in disciplines %}
+            {% set r = results[d.id] ?? null %}
+            <tr data-discipline="{{ d.id }}">
+                <td>{{ d.name }}</td>
+                <td>{{ d.kategorie }}</td>
+
+                <td style="width: 150px;">
+                    <input type="number"
+                           class="form-control input-leistung"
+                           value="{{ r.leistung ?? '' }}"
+                           step="0.01"
+                           data-discipline="{{ d.id }}">
+                </td>
+
+                <td>{{ d.einheit }}</td>
+
+                <td>
+                    <span class="badge bg-secondary result-badge" id="badge-{{ d.id }}">
+                        {{ r.stufe ?? "-" }}
+                    </span>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
 </div>
 
 <script>
-// AJAX Speichern beim Verlassen des Eingabefeldes
-document.querySelectorAll(".result-input").forEach(function (fld) {
-    fld.addEventListener("change", function () {
-        const val = this.value;
-        const did = this.dataset.discipline;
+document.addEventListener("DOMContentLoaded", () => {
+
+    document.querySelectorAll(".input-leistung").forEach(el => {
+        el.addEventListener("change", () => saveResult(el));
+    });
+
+    function saveResult(el) {
+
+        const disciplineId = el.dataset.discipline;
+        const leistung     = el.value;
 
         fetch("{{ path('sportabzeichen_results_save') }}", {
             method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
             body: new URLSearchParams({
                 ep_id: "{{ epId }}",
-                discipline_id: did,
-                leistung: val
+                discipline_id: disciplineId,
+                leistung: leistung
             })
-        }).then(res => res.text()).then(txt => {
-            console.log("SAVE:", txt);
-            location.reload(); // neu laden → Stufe/Punkte aktualisiert
+        })
+        .then(r => r.text())
+        .then(txt => {
+            const badge = document.getElementById("badge-" + disciplineId);
+            badge.innerText = txt.includes("OK") ? "✓ gespeichert" : "?" ;
+            badge.classList.remove("bg-secondary");
+            badge.classList.add("bg-success");
+
+            setTimeout(() => {
+                badge.classList.remove("bg-success");
+                badge.classList.add("bg-secondary");
+                badge.innerText = "-";
+            }, 1200);
         });
-    });
+    }
+
 });
 </script>
 

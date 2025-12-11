@@ -90,6 +90,7 @@ final class Version20250218000100 extends AbstractMigration
                 id              SERIAL PRIMARY KEY,
                 exam_id         INT NOT NULL REFERENCES sportabzeichen_exams(id) ON DELETE CASCADE,
                 participant_id  INT NOT NULL REFERENCES sportabzeichen_participants(id) ON DELETE CASCADE,
+                age_year        INT NOT NULL,
                 UNIQUE (exam_id, participant_id)
             );
         ");
