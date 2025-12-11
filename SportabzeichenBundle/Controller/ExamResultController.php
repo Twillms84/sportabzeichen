@@ -29,22 +29,21 @@ final class ExamResultController extends AbstractPageController
             [14, 15, "AC1415"],
             [16, 17, "AC1617"],
             [18, 19, "AC1819"],
-            [20, 25, "AC2025"],
-            [26, 30, "AC2630"],
-            [31, 35, "AC3135"],
-            [36, 40, "AC3640"],
-            [41, 45, "AC4145"],
-            [46, 50, "AC4650"],
-            [51, 55, "AC5155"],
-            [56, 60, "AC5660"],
-            [61, 65, "AC6165"],
-            [66, 70, "AC6670"],
-            [71, 75, "AC7175"],
-            [76, 80, "AC7680"],
-            [81, 85, "AC8185"],
-            [86, 90, "AC8690"],
-            [91, 95, "AC9195"],
-            [96, 100, "AC96100"],
+            [20, 24, "AC2024"],
+            [25, 29, "AC2529"],
+            [30, 34, "AC3034"],
+            [35, 39, "AC3539"],
+            [40, 44, "AC4044"],
+            [45, 49, "AC4549"],
+            [50, 54, "AC5054"],
+            [55, 59, "AC5559"],
+            [60, 64, "AC6064"],
+            [65, 69, "AC6569"],
+            [70, 74, "AC7074"],
+            [75, 79, "AC7579"],
+            [80, 84, "AC8084"],
+            [85, 89, "AC8589"],
+            [90, 200, "AC9000"],
         ];
 
         foreach ($mapping as [$min, $max, $label]) {
@@ -52,9 +51,9 @@ final class ExamResultController extends AbstractPageController
                 return $label;
             }
         }
-
-        return "AC2025"; // Fallback
+        return "AC2024";
     }
+
 
     /* --------------------------------------------------------
      * 1️⃣ Auswahlseite – Prüfung wählen
@@ -75,8 +74,9 @@ final class ExamResultController extends AbstractPageController
         ]);
     }
 
+
     /* --------------------------------------------------------
-     * 2️⃣ Ergebnisse eingeben – Teilnehmer & Disziplinen
+     * 2️⃣ Ergebnisse eingeben – Liste Teilnehmer + Disziplinen
      * -------------------------------------------------------- */
     #[Route('/exam/{examId}', name: 'index', methods: ['GET'])]
     public function index(int $examId, Connection $conn): Response
@@ -94,7 +94,7 @@ final class ExamResultController extends AbstractPageController
             throw $this->createNotFoundException("Prüfung nicht gefunden.");
         }
 
-        // Teilnehmer der Prüfung laden
+        // Teilnehmer laden
         $participants = $conn->fetchAllAssociative("
             SELECT ep.id AS ep_id,
                    p.vorname, p.nachname,
@@ -106,68 +106,30 @@ final class ExamResultController extends AbstractPageController
             ORDER BY p.nachname, p.vorname
         ", [$examId]);
 
-        // Geschlecht normalisieren & Altersklasse berechnen
-        foreach ($participants as &$p) {
-            $g = strtoupper((string) $p['geschlecht']);
-            if (in_array($g, ['M', 'MALE', 'MÄNNLICH'], true)) {
-                $p['geschlecht'] = 'MALE';
-            } elseif (in_array($g, ['W', 'F', 'FEMALE', 'WEIBLICH'], true)) {
-                $p['geschlecht'] = 'FEMALE';
-            } else {
-                $p['geschlecht'] = 'OTHER';
-            }
 
-            $p['altersklasse'] = $this->mapAgeToAltersklasse((int)$p['age_year']);
-        }
-        unset($p);
-
-        // Disziplinen + Anforderungen laden (Schwimmen ausgeschlossen)
-        $rows = $conn->fetchAllAssociative("
+        /* --------------------------------------------------------
+         * Disziplinen + Anforderungen gemeinsam laden
+         * -------------------------------------------------------- */
+        $disciplineRows = $conn->fetchAllAssociative("
             SELECT 
-                d.id AS discipline_id,
+                d.id,
                 d.name,
                 d.kategorie,
                 d.einheit,
-                d.berechnungsart,
                 r.altersklasse,
-                CASE
-                    WHEN r.geschlecht IN ('M','MALE','MÄNNLICH') THEN 'MALE'
-                    WHEN r.geschlecht IN ('W','F','FEMALE','WEIBLICH') THEN 'FEMALE'
-                    ELSE r.geschlecht
-                END AS geschlecht,
-                r.bronze,
-                r.silber,
-                r.gold
+                r.geschlecht
             FROM sportabzeichen_disciplines d
             JOIN sportabzeichen_requirements r
-                ON r.discipline_id = d.id
-            WHERE d.kategorie <> 'Schwimmen'
-              AND r.jahr = ?
+              ON d.id = r.discipline_id
+            WHERE r.jahr = ?
+              AND LOWER(d.kategorie) <> 'schwimmen'
             ORDER BY d.kategorie, d.name
         ", [$exam['exam_year']]);
 
-        // Gruppieren nach Geschlecht → Altersklasse → Kategorie
+        // Gruppieren nach Kategorie
         $disciplines = [];
-        $categories = [];
-
-        foreach ($rows as $r) {
-            $gender = $r['geschlecht'];
-            $ak     = $r['altersklasse'];
-            $cat    = $r['kategorie'];
-
-            if (!in_array($cat, $categories, true)) {
-                $categories[] = $cat;
-            }
-
-            $disciplines[$gender][$ak][$cat][] = [
-                'id'             => $r['discipline_id'],
-                'name'           => $r['name'],
-                'einheit'        => $r['einheit'],
-                'berechnungsart' => $r['berechnungsart'],
-                'bronze'         => $r['bronze'],
-                'silber'         => $r['silber'],
-                'gold'           => $r['gold'],
-            ];
+        foreach ($disciplineRows as $row) {
+            $disciplines[$row['kategorie']][] = $row;
         }
 
         // Ergebnisse laden
@@ -188,13 +150,24 @@ final class ExamResultController extends AbstractPageController
             'exam'        => $exam,
             'participants'=> $participants,
             'disciplines' => $disciplines,
-            'categories'  => $categories,
             'results'     => $results,
         ]);
     }
 
+
     /* --------------------------------------------------------
-     * 3️⃣ AJAX: Ergebnis speichern
+     * 3️⃣ Einzelansicht (optional)
+     * -------------------------------------------------------- */
+    #[Route('/{examId}/edit/{epId}', name: 'edit', methods: ['GET'])]
+    public function edit(int $examId, int $epId, Connection $conn): Response
+    {
+        // unverändert – kann bleiben
+        return new Response("Not implemented for now");
+    }
+
+
+    /* --------------------------------------------------------
+     * 4️⃣ AJAX-Speichern
      * -------------------------------------------------------- */
     #[Route('/save', name: 'save', methods: ['POST'])]
     public function save(Request $request, Connection $conn): Response
@@ -209,9 +182,9 @@ final class ExamResultController extends AbstractPageController
             ? null
             : (float)$leistungRaw;
 
-        // Teilnehmerdaten laden
+        // Teilnehmer laden
         $ep = $conn->fetchAssociative("
-            SELECT ep.age_year, p.geschlecht, e.exam_year
+            SELECT ep.age_year, p.geschlecht AS sex, e.exam_year
             FROM sportabzeichen_exam_participants ep
             JOIN sportabzeichen_participants p ON p.id = ep.participant_id
             JOIN sportabzeichen_exams e ON ep.exam_id = e.id
@@ -222,21 +195,14 @@ final class ExamResultController extends AbstractPageController
             return new Response("NOT FOUND", 404);
         }
 
-        $age        = (int)$ep['age_year'];
-        $geschlechtRaw = strtoupper((string)$ep['geschlecht']);
+        // Geschlecht mappen
+        $genderMap = ['m' => 'MALE', 'w' => 'FEMALE'];
+        $geschlecht = $genderMap[strtolower($ep['sex'])] ?? null;
 
-        if (in_array($geschlechtRaw, ['M', 'MALE', 'MÄNNLICH'], true)) {
-            $geschlecht = 'MALE';
-        } elseif (in_array($geschlechtRaw, ['W', 'F', 'FEMALE', 'WEIBLICH'], true)) {
-            $geschlecht = 'FEMALE';
-        } else {
-            $geschlecht = $geschlechtRaw;
-        }
+        // Altersklasse berechnen
+        $ak = $this->mapAgeToAltersklasse((int)$ep['age_year']);
 
-        $jahr = (int)$ep['exam_year'];
-        $ak   = $this->mapAgeToAltersklasse($age);
-
-        // Anforderungen zur Disziplin laden
+        // Anforderungen laden
         $req = $conn->fetchAssociative("
             SELECT bronze, silber, gold, berechnungsart
             FROM sportabzeichen_requirements
@@ -244,29 +210,30 @@ final class ExamResultController extends AbstractPageController
               AND jahr = ?
               AND altersklasse = ?
               AND geschlecht = ?
-        ", [$disciplineId, $jahr, $ak, $geschlecht]);
+        ", [$disciplineId, $ep['exam_year'], $ak, $geschlecht]);
 
-        $stufe  = null;
+        $stufe = null;
         $points = null;
 
         if ($leistung !== null && $req) {
             if ($req['berechnungsart'] === 'GREATER') {
-                if ($leistung >= $req['gold'])        { $stufe = 'Gold';   $points = 3; }
-                elseif ($leistung >= $req['silber'])  { $stufe = 'Silber'; $points = 2; }
-                elseif ($leistung >= $req['bronze'])  { $stufe = 'Bronze'; $points = 1; }
-            } else { // LOWER
-                if ($leistung <= $req['gold'])        { $stufe = 'Gold';   $points = 3; }
-                elseif ($leistung <= $req['silber'])  { $stufe = 'Silber'; $points = 2; }
-                elseif ($leistung <= $req['bronze'])  { $stufe = 'Bronze'; $points = 1; }
+                if ($leistung >= $req['gold'])   { $stufe = 'Gold'; $points = 3; }
+                elseif ($leistung >= $req['silber']) { $stufe = 'Silber'; $points = 2; }
+                elseif ($leistung >= $req['bronze']) { $stufe = 'Bronze'; $points = 1; }
+            } else {
+                if ($leistung <= $req['gold'])   { $stufe = 'Gold'; $points = 3; }
+                elseif ($leistung <= $req['silber']) { $stufe = 'Silber'; $points = 2; }
+                elseif ($leistung <= $req['bronze']) { $stufe = 'Bronze'; $points = 1; }
             }
         }
 
-        // Vorheriges Ergebnis?
+        // Existiert ein Eintrag?
         $existing = $conn->fetchOne("
             SELECT id FROM sportabzeichen_exam_results
             WHERE ep_id = ? AND discipline_id = ?
         ", [$epId, $disciplineId]);
 
+        // Speichern
         if ($existing) {
             $conn->update('sportabzeichen_exam_results', [
                 'leistung' => $leistung,
