@@ -26,7 +26,12 @@ class ExamResultController extends AbstractPageController
         FROM sportabzeichen_exams
         ORDER BY exam_year DESC, exam_date DESC
     ");
-
+    
+    return $this->render('@PulsRSportabzeichen/results/exam_list.html.twig', [
+    'exams' => $exams,
+    'title' => 'Prüfung auswählen',
+    ]);
+}
     /**
      * Ergebnisse einer Person innerhalb einer Prüfung anzeigen/bearbeiten
      */
