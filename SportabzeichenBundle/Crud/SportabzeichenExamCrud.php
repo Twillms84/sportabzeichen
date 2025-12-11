@@ -75,23 +75,23 @@ class SportabzeichenExamCrud extends AbstractCrud
     // -------------------------------------------------------
     // Formular Definition
     // -------------------------------------------------------
-    public function configureFormFields(): void
-    {
-        $this->addFormField('examName', TextType::class, [
-            'label' => 'Bezeichnung',
-            'required' => true,
-        ]);
+public function configureFormFields(FormMapper $formMapper): void
+{
+    $formMapper->add('examName', TextType::class, [
+        'label' => 'Bezeichnung',
+        'required' => true,
+    ]);
 
-        $this->addFormField('examDate', DatePickerType::class, [
-            'label' => 'Prüfungsdatum',
-            'required' => false,
-        ]);
+    $formMapper->add('examDate', DatePickerType::class, [
+        'label' => 'Prüfungsdatum',
+        'required' => false,
+    ]);
 
-        $this->addFormField('examYear', IntegerType::class, [
-            'label' => 'Jahr',
-            'required' => true,
-        ]);
-    }
+    $formMapper->add('examYear', IntegerType::class, [
+        'label' => 'Jahr',
+        'required' => true,
+    ]);
+}
 
     // -------------------------------------------------------
     // Detailseite
