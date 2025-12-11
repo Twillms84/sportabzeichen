@@ -99,6 +99,8 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 <script>
 document.getElementById("saveAllBtn").addEventListener("click", function () {
 
+    console.log("Speichern-Skript geladen!");
+
     let entries = [];
 
     document.querySelectorAll(".result-input").forEach(input => {
