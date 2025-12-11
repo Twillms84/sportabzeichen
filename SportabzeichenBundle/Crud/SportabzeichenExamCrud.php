@@ -21,7 +21,7 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 
-class SportabzeichenExamCrud extends AbstractCrud
+class SportabzeichenExamCrud extends ServiceCrud
 {
     public function getEntityClass(): string
     {
