@@ -204,9 +204,8 @@ final class ExamResultController extends AbstractPageController
     #[Route('/save', name: 'save', methods: ['POST'])]
     public function save(Request $request, Connection $conn): Response
     {
-        …
+        return new Response("Not implemented for now");
         // bleibt unverändert (dein vorhandener Code)
-        …
     }
 
     /* --------------------------------------------------------
