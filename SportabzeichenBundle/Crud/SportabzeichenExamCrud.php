@@ -96,13 +96,14 @@ public function configureFormFields(FormMapper $formMapper): void
     // -------------------------------------------------------
     // Detailseite
     // -------------------------------------------------------
-    public function configureShowFields(): void
-    {
-        $this->addShowField('id');
-        $this->addShowField('examName');
-        $this->addShowField('examDate');
-        $this->addShowField('examYear');
-        $this->addShowField('createdAt');
-        $this->addShowField('updatedAt');
-    }
+public function configureShowFields(ShowMapper $showMapper): void
+{
+    $showMapper->add('id');
+    $showMapper->add('examName', null, ['label' => 'Bezeichnung']);
+    $showMapper->add('examDate', null, ['label' => 'Datum']);
+    $showMapper->add('examYear', null, ['label' => 'Jahr']);
+    $showMapper->add('createdAt', null, ['label' => 'Erstellt am']);
+    $showMapper->add('updatedAt', null, ['label' => 'Aktualisiert am']);
+}
+
 }
