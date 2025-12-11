@@ -52,7 +52,7 @@ final class ExamController extends AbstractPageController
             $year = (int)$request->request->get('exam_year');
             $date = $request->request->get('exam_date') ?: null;
 
-            $conn->insert('sportabzeichen_exams', [
+            $conn->insert('sportabzeichen_exam', [
                 'exam_name' => $name,
                 'exam_year' => $year,
                 'exam_date' => $date,
@@ -116,13 +116,13 @@ final class ExamController extends AbstractPageController
             $ageYear = $exam['exam_year'] -
                        (int) $conn->fetchOne("SELECT EXTRACT(YEAR FROM geburtsdatum) FROM sportabzeichen_participants WHERE id = ?", [$participantId]);
 
-            $conn->insert('sportabzeichen_exams_participants', [
+            $conn->insert('sportabzeichen_exam_participants', [
                 'exam_id'        => $id,
                 'participant_id' => $participantId,
                 'age_year'       => $ageYear,
             ]);
 
-            return $this->redirectToRoute('sportabzeichen_exams_participants', ['id' => $id]);
+            return $this->redirectToRoute('sportabzeichen_exam_participants', ['id' => $id]);
         }
 
         // Teilnehmerliste holen
