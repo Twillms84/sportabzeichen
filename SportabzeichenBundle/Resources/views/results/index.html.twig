@@ -1,113 +1,41 @@
 {% extends '@IServCore/page.html.twig' %}
 
 {% block title %}
-Ergebnisse eingeben – {{ exam.exam_year }}
+Prüfung auswählen
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
 
-    <h2>🏅 Ergebnisse eingeben – Prüfung {{ exam.exam_year }}</h2>
+    <h2>🏁 Prüfung zur Ergebniseingabe auswählen</h2>
+    <hr>
 
-    <form method="get" class="row g-3 mb-3">
-        <div class="col-md-3">
-            <label>Geschlecht</label>
-            <select name="gender" class="form-select">
-                <option value="">(alle)</option>
-                <option value="MALE"   {% if filters.gender == 'MALE' %}selected{% endif %}>Männlich</option>
-                <option value="FEMALE" {% if filters.gender == 'FEMALE' %}selected{% endif %}>Weiblich</option>
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <label>Klasse</label>
-            <input type="text" name="class" value="{{ filters.class }}" class="form-control" placeholder="z.B. 10a">
-        </div>
-
-        <div class="col-md-4">
-            <label>Suche</label>
-            <input type="text" name="search" value="{{ filters.search }}" class="form-control" placeholder="Name">
-        </div>
-
-        <div class="col-md-2">
-            <label>&nbsp;</label><br>
-            <button class="btn btn-primary">Filtern</button>
-        </div>
-    </form>
-
-    <table class="table table-bordered table-striped align-middle">
+    <table class="table table-striped">
         <thead>
-            <tr>
-                <th>Name</th>
-                <th>Alter</th>
-
-                {% for category, items in disciplines %}
-                    <th>{{ category }}</th>
-                {% endfor %}
-            </tr>
+        <tr>
+            <th>Name</th>
+            <th>Jahr</th>
+            <th>Datum</th>
+            <th></th>
+        </tr>
         </thead>
 
         <tbody>
-        {% for p in participants %}
+        {% for exam in exams %}
             <tr>
-                <td>{{ p.vorname }} {{ p.nachname }}</td>
-                <td>{{ p.age_year }}</td>
-
-                {% for category, items in disciplines %}
-
-                    <td>
-                        <select class="form-select discipline-select"
-                                data-ep="{{ p.ep_id }}"
-                                data-category="{{ category }}">
-                            <option value="">(keine Auswahl)</option>
-
-                            {% for d in items %}
-                                <option value="{{ d.id }}"
-                                    {% if results[p.ep_id][d.id] is defined %}selected{% endif %}
-                                >{{ d.name }}</option>
-                            {% endfor %}
-                        </select>
-
-                        <input type="number" step="0.01"
-                               class="form-control mt-1 result-input"
-                               data-ep="{{ p.ep_id }}"
-                               data-cat="{{ category }}"
-                               value="{% if results[p.ep_id] is defined %}
-                                        {{ results[p.ep_id] | first.leistung }}
-                                      {% endif %}">
-                    </td>
-
-                {% endfor %}
+                <td>{{ exam.exam_name }}</td>
+                <td>{{ exam.exam_year }}</td>
+                <td>{{ exam.exam_date ? exam.exam_date|date('d.m.Y') : '-' }}</td>
+                <td>
+                    <a href="{{ path('sportabzeichen_results_index', { examId: exam.id }) }}"
+                       class="btn btn-primary btn-sm">
+                        Ergebnisse eingeben
+                    </a>
+                </td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
 
 </div>
-
-<script>
-document.addEventListener("change", function(e) {
-
-    if (e.target.classList.contains("result-input")) {
-        let ep      = e.target.dataset.ep;
-        let leistung= e.target.value;
-
-        let select  = e.target.parentNode.querySelector(".discipline-select");
-        let discipline = select.value;
-
-        if (!discipline) return;
-
-        fetch("{{ path('sportabzeichen_results_save') }}", {
-            method: "POST",
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
-            body: new URLSearchParams({
-                ep_id: ep,
-                discipline_id: discipline,
-                leistung: leistung
-            })
-        });
-    }
-});
-</script>
-
 {% endblock %}
