@@ -1,14 +1,14 @@
-{% extends "@IServCore/page.html.twig" %}
+{% extends '@IServCore/page.html.twig' %}
 
 {% block title %}
-    Teilnehmer – {{ exam.examName }} ({{ exam.examYear }})
+    Teilnehmer – {{ exam.exam_name }} ({{ exam.exam_year }})
 {% endblock %}
 
-{% block body %}
-<h1>Teilnehmer – {{ exam.examName }} ({{ exam.examYear }})</h1>
+{% block content %}
+<h1>Teilnehmer – {{ exam.exam_name }} ({{ exam.exam_year }})</h1>
 
 <a href="{{ path('sportabzeichen_exam_add_participant', {id: exam.id}) }}" class="btn btn-primary mb-3">
-    Teilnehmer hinzufügen
+    ➕ Teilnehmer hinzufügen
 </a>
 
 <form method="post"
@@ -38,13 +38,13 @@
     <tbody>
     {% for ep in participants %}
         <tr>
-            <td>{{ ep.id }}</td>
+            <td>{{ ep.ep_id }}</td>
             <td>{{ ep.vorname }} {{ ep.nachname }}</td>
             <td>{{ ep.age_year }}</td>
             <td>
                 <a href="{{ path('sportabzeichen_results_edit', {
                     examId: exam.id,
-                    epId: ep.id
+                    epId: ep.ep_id
                 }) }}" class="btn btn-sm btn-secondary">
                     Ergebnisse eintragen
                 </a>
@@ -54,6 +54,6 @@
         <tr><td colspan="4">Noch keine Teilnehmer.</td></tr>
     {% endfor %}
     </tbody>
-
 </table>
+
 {% endblock %}
