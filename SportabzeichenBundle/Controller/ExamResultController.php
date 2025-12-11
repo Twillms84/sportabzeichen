@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 /**
  * Ergebnisseingabe für Teilnehmer einer Prüfung
  */
-#[Route(path: '/sportabzeichen/exam/results', name: 'sportabzeichen_results_')]
+#[Route(path: '/sportabzeichen/exams/results', name: 'sportabzeichen_results_')]
 class ExamResultController extends AbstractPageController
 {
     /**
