@@ -12,10 +12,8 @@ use PulsR\SportabzeichenBundle\Entity\SportabzeichenParticipant;
 
 class ParticipantCrud extends ServiceCrud
 {
-    public function __construct()
-    {
-        parent::__construct(SportabzeichenParticipant::class);
-    }
+    // Entity muss als statische Property definiert werden
+    protected static $entityClass = SportabzeichenParticipant::class;
 
     protected function configure(): void
     {

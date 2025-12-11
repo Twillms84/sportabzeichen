@@ -12,15 +12,8 @@ use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 
 class SportabzeichenExamCrud extends ServiceCrud
 {
-    public function __construct()
-    {
-        // ServiceCrud braucht die Entity-Klasse im Konstruktor
-        parent::__construct(SportabzeichenExam::class);
-    }
+    protected static $entityClass = SportabzeichenExam::class;
 
-    /**
-     * Grundkonfiguration (Titel, Rechte, etc.)
-     */
     protected function configure(): void
     {
         $this->title = _('Prüfungen');
@@ -31,47 +24,23 @@ class SportabzeichenExamCrud extends ServiceCrud
         $this->canDelete = true;
     }
 
-    /**
-     * Spalten in der Listenansicht
-     */
     public function configureListFields(ListMapper $list): void
     {
         $list
-            ->addIdentifier('examName', null, [
-                'label' => _('Name'),
-            ])
-            ->add('examDate', 'date', [
-                'label' => _('Datum'),
-            ])
-            ->add('examYear', null, [
-                'label' => _('Jahr'),
-            ])
-            ->add('createdAt', 'datetime', [
-                'label' => _('Erstellt am'),
-            ]);
+            ->addIdentifier('examName', null, ['label' => _('Name')])
+            ->add('examDate', 'date', ['label' => _('Datum')])
+            ->add('examYear', null, ['label' => _('Jahr')])
+            ->add('createdAt', 'datetime', ['label' => _('Erstellt am')]);
     }
 
-    /**
-     * Felder im Formular (Neu/Bearbeiten)
-     */
     public function configureFormFields(FormMapper $form): void
     {
         $form
-            ->add('examName', null, [
-                'label' => _('Name der Prüfung'),
-            ])
-            ->add('examYear', null, [
-                'label' => _('Jahr'),
-            ])
-            ->add('examDate', null, [
-                'label' => _('Datum'),
-                'required' => false,
-            ]);
+            ->add('examName', null, ['label' => _('Name der Prüfung')])
+            ->add('examYear', null, ['label' => _('Jahr')])
+            ->add('examDate', null, ['label' => _('Datum')]);
     }
 
-    /**
-     * Felder in der Detailansicht
-     */
     public function configureShowFields(ShowMapper $show): void
     {
         $show
