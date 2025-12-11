@@ -50,16 +50,20 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                     <td>{{ p.age_year }}</td>
 
                     {% for category, items in disciplines %}
+                        {% set epResults = results[p.ep_id] ?? {} %}
                         {% set options = items|filter(i => i.altersklasse == p.altersklasse and i.geschlecht == p.gender) %}
-                        {% set selectedDisc = results[p.ep_id]|keys|first ?? null %}
-                        {% set selectedValue = results[p.ep_id][selectedDisc].leistung ?? '' %}
+                        {% set selectedDisc = epResults|keys|first ?? null %}
+                        {% set selectedValue = (selectedDisc and epResults[selectedDisc] is defined)
+                            ? epResults[selectedDisc].leistung
+                            : '' %}
 
                         <td>
                             <select name="results[{{ p.ep_id }}][discipline]" class="form-select">
                                 <option value="">(keine Auswahl)</option>
                                 {% for d in options %}
+                                    {% set hasResult = epResults[d.id] is defined %}
                                     <option value="{{ d.id }}"
-                                        {% if selectedDisc == d.id %}
+                                        {% if hasResult %}
                                             selected
                                         {% elseif d.auswahlnummer == 1 %}
                                             selected
@@ -71,14 +75,15 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                             </select>
 
                             <input type="number"
-                                   name="results[{{ p.ep_id }}][leistung]"
-                                   step="0.01"
-                                   class="form-control mt-1"
-                                   value="{{ selectedValue }}">
+                                name="results[{{ p.ep_id }}][leistung]"
+                                step="0.01"
+                                class="form-control mt-1"
+                                value="{{ selectedValue }}">
                         </td>
                     {% endfor %}
                 </tr>
             {% endfor %}
+
             </tbody>
         </table>
 
