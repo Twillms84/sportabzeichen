@@ -87,7 +87,6 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                         <select class="form-select discipline-select"
                                 data-ep="{{ p.ep_id }}">
                             <option value="">(keine Auswahl)</option>
-
                             {% for d in items %}
                                 {% if d.altersklasse == ak and d.geschlecht == gender %}
                                     <option value="{{ d.id }}"
@@ -97,6 +96,8 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                                             selected
                                         {% endif %}
                                     >
+                                        {{ d.name }}
+                                    </option>
                                 {% endif %}
                             {% endfor %}
                         </select>
