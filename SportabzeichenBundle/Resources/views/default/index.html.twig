@@ -1,42 +1,31 @@
 {% extends '@IServCore/page.html.twig' %}
 
 {% block title %}
-    Sportabzeichen
+  Sportabzeichen Verwaltung
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-body">
+  <div class="container mt-4">
+      <div class="card shadow-sm">
+          <div class="card-body">
+              <h1 class="mb-3">
+                  <i class="fa fa-medal text-warning"></i> Sportabzeichen Verwaltung
+              </h1>
 
-            <h1 class="mb-3">
-                <i class="fa fa-medal text-warning"></i> Sportabzeichen Verwaltung
-            </h1>
+              <p>Willkommen im Sportabzeichen-Modul von IServ.</p>
 
-            <p>Willkommen im Sportabzeichen-Modul von IServ.</p>
+              <ul>
+                  <li>🏁 <a href="{{ path('crud_sportabzeichenexam_index') }}">Prüfungen verwalten</a></li>
+                  <li>👥 <a href="{{ path('crud_participant_index') }}">Teilnehmer verwalten</a></li>
+                  <li>📥 <a href="{{ path('sportabzeichen_admin_upload') }}">Anforderungen importieren</a></li>
+              </ul>
 
-            <ul>
-                {# Prüfungen: Teilnehmer zuordnen + Ergebnisse erfassen #}
-                <li>📋 
-                    <a href="{{ path('sportabzeichen_exam_index') }}">
-                        Prüfungen & Ergebniseingabe
-                    </a>
-                </li>
+              <hr>
 
-                {# Zentrale Modulverwaltung (Dashboard) #}
-                <li>⚙️ 
-                    <a href="{{ path('sportabzeichen_manage_index') }}">
-                        Modulübersicht & Administration
-                    </a>
-                </li>
-            </ul>
-
-            <hr>
-
-            <p class="text-muted">
-                <small>Version 0.1 – Entwickelt von PulsR für IServ</small>
-            </p>
-        </div>
-    </div>
-</div>
+              <p class="text-muted">
+                  <small>Version 0.1 – Entwickelt von PulsR für IServ</small>
+              </p>
+          </div>
+      </div>
+  </div>
 {% endblock %}
