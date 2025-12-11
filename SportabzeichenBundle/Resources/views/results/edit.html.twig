@@ -1,0 +1,78 @@
+{% extends "@IServCore/page.html.twig" %}
+
+{% block page_title %}
+    Ergebnisse für {{ participant.vorname }} {{ participant.nachname }}
+{% endblock %}
+
+{% block page_content %}
+
+<div class="content">
+
+    <h2>Ergebnisse für {{ participant.vorname }} {{ participant.nachname }}</h2>
+    <p>
+        Jahrgang: <strong>{{ participant.age_year }} Jahre</strong><br>
+        Geschlecht: <strong>{{ participant.geschlecht }}</strong>
+    </p>
+
+    <a href="{{ path('sportabzeichen_exam_participants', { id: examId }) }}"
+       class="btn btn-outline-secondary mb-3">
+        ← Zurück zur Teilnehmerübersicht
+    </a>
+
+    <table class="table table-striped table-bordered" id="results-table">
+        <thead>
+            <tr>
+                <th>Disziplin</th>
+                <th>Kategorie</th>
+                <th>Einheit</th>
+                <th>Leistung</th>
+                <th>Stufe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in disciplines %}
+                {% include '@PulsRSportabzeichen/results/_row.html.twig' with {
+                    discipline: d,
+                    result: results[d.id] ?? null,
+                    epId: epId
+                } %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    document.querySelectorAll(".leistung-input").forEach(function(input) {
+
+        input.addEventListener("change", function() {
+
+            let epId = this.dataset.ep;
+            let disciplineId = this.dataset.discipline;
+            let value = this.value;
+
+            fetch("{{ path('sportabzeichen_results_save') }}", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    ep_id: epId,
+                    discipline_id: disciplineId,
+                    leistung: value
+                })
+            })
+            .then(r => r.text())
+            .then(r => {
+                // Optional: Nachladen der Stufen-Markierung
+                location.reload();
+            });
+        });
+    });
+
+});
+</script>
+
+{% endblock %}
