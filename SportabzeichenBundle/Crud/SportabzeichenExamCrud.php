@@ -8,18 +8,14 @@ use IServ\CrudBundle\Crud\ServiceCrud;
 use IServ\CrudBundle\Mapper\FormMapper;
 use IServ\CrudBundle\Mapper\ListMapper;
 use IServ\CrudBundle\Mapper\ShowMapper;
-
 use PulsR\SportabzeichenBundle\Entity\SportabzeichenExam;
 use Psr\Container\ContainerInterface;
 
 final class SportabzeichenExamCrud extends ServiceCrud
 {
-    protected static $entityClass = SportabzeichenExam::class;
-
-    public function __construct(ContainerInterface $locator, ObjectManagerInterface $objectManager)
+    public function __construct(ContainerInterface $locator)
     {
-        parent::__construct($locator);
-        $this->objectManager = $objectManager;
+        parent::__construct($locator, SportabzeichenExam::class);
     }
 
     protected function configure(): void
@@ -27,8 +23,8 @@ final class SportabzeichenExamCrud extends ServiceCrud
         $this->title = _('Prüfungen');
         $this->itemTitle = _('Prüfung');
 
-        $this->canAdd = true;
-        $this->canEdit = true;
+        $this->canAdd    = true;
+        $this->canEdit   = true;
         $this->canDelete = true;
     }
 
