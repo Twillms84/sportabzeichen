@@ -95,55 +95,60 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
 
 </div>
 
+{% endblock %}
 
-<script>
-document.getElementById("saveAllBtn").addEventListener("click", function () {
+{% block javascripts %}
+    {{ parent() }}
 
+    <script>
     console.log("Speichern-Skript geladen!");
 
-    let entries = [];
+    document.getElementById("saveAllBtn").addEventListener("click", function () {
+        console.log("SaveAll clicked!");
 
-    document.querySelectorAll(".result-input").forEach(input => {
-        let ep = input.dataset.ep;
-        let leistung = input.value;
+        let entries = [];
 
-        let select = input.closest("td").querySelector(".discipline-select");
-        let discipline = select.value;
+        document.querySelectorAll(".result-input").forEach(input => {
 
-        if (!discipline || leistung === "") return;
+            let ep = input.dataset.ep;
+            let leistung = input.value;
 
-        entries.push({
-            ep_id: ep,
-            discipline_id: discipline,
-            leistung: leistung
+            let select = input.closest("td").querySelector(".discipline-select");
+            let discipline = select.value;
+
+            if (!discipline || leistung === "") return;
+
+            entries.push({
+                ep_id: ep,
+                discipline_id: discipline,
+                leistung: leistung
+            });
         });
-    });
 
-    if (entries.length === 0) {
-        alert("Keine Daten zum Speichern gefunden.");
-        return;
-    }
-
-    fetch("{{ path('sportabzeichen_results_save_many') }}", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(entries)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.ok) {
-            alert("Alle Ergebnisse gespeichert!");
-        } else {
-            alert("Fehler beim Speichern.");
-            console.error(data);
+        if (entries.length === 0) {
+            alert("Keine Daten zum Speichern gefunden.");
+            return;
         }
-    })
-    .catch(err => {
-        alert("Fehler beim Speichern (Netzwerk).");
-        console.error(err);
+
+        fetch("{{ path('sportabzeichen_results_save_many') }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(entries)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                alert("Alle Ergebnisse gespeichert!");
+            } else {
+                alert("Fehler beim Speichern.");
+                console.error(data);
+            }
+        })
+        .catch(err => {
+            alert("Fehler beim Speichern (Netzwerk).");
+            console.error(err);
+        });
+
     });
-
-});
-</script>
-
+    </script>
 {% endblock %}
