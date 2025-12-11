@@ -13,6 +13,9 @@ use PulsR\SportabzeichenBundle\Entity\SportabzeichenParticipant;
 
 final class ParticipantCrud extends ServiceCrud
 {
+    
+    protected static $entityClass = SportabzeichenParticipant::class;
+
     public function __construct(ContainerInterface $locator)
     {
         parent::__construct($locator, SportabzeichenParticipant::class);

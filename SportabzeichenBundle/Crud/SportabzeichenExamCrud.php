@@ -13,6 +13,9 @@ use Psr\Container\ContainerInterface;
 
 final class SportabzeichenExamCrud extends ServiceCrud
 {
+    
+    Protected static $entityClass = SportabzeichenExam::class;
+
     public function __construct(ContainerInterface $locator)
     {
         parent::__construct($locator, SportabzeichenExam::class);
