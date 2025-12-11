@@ -1,37 +1,113 @@
-{% extends "@IServCrud/default.html.twig" %}
+{% extends '@IServCore/page.html.twig' %}
 
-{% block title %}Ergebnisse{% endblock %}
+{% block title %}
+Ergebnisse eingeben – {{ exam.exam_year }}
+{% endblock %}
 
-{% block body %}
-<h1>Ergebnisse für {{ ep.participant.vorname }} {{ ep.participant.nachname }}</h1>
+{% block content %}
+<div class="container mt-4">
 
-<a href="{{ path('sportabzeichen_add_result', {ep: ep.id}) }}" class="btn btn-primary mb-3">
-    Neue Leistung eintragen
-</a>
+    <h2>🏅 Ergebnisse eingeben – Prüfung {{ exam.exam_year }}</h2>
 
-<table class="table table-bordered">
-    <thead>
-    <tr>
-        <th>Disziplin</th>
-        <th>Kategorie</th>
-        <th>Auswahlnummer</th>
-        <th>Leistung</th>
-        <th>Stufe</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for r in results %}
-        <tr>
-            <td>{{ r.disziplin }}</td>
-            <td>{{ r.kategorie }}</td>
-            <td>{{ r.auswahlnummer }}</td>
-            <td>{{ r.leistung }}</td>
-            <td>{{ r.stufe }}</td>
-        </tr>
-    {% else %}
-        <tr><td colspan="5">Noch keine Ergebnisse eingetragen.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+    <form method="get" class="row g-3 mb-3">
+        <div class="col-md-3">
+            <label>Geschlecht</label>
+            <select name="gender" class="form-select">
+                <option value="">(alle)</option>
+                <option value="MALE"   {% if filters.gender == 'MALE' %}selected{% endif %}>Männlich</option>
+                <option value="FEMALE" {% if filters.gender == 'FEMALE' %}selected{% endif %}>Weiblich</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label>Klasse</label>
+            <input type="text" name="class" value="{{ filters.class }}" class="form-control" placeholder="z.B. 10a">
+        </div>
+
+        <div class="col-md-4">
+            <label>Suche</label>
+            <input type="text" name="search" value="{{ filters.search }}" class="form-control" placeholder="Name">
+        </div>
+
+        <div class="col-md-2">
+            <label>&nbsp;</label><br>
+            <button class="btn btn-primary">Filtern</button>
+        </div>
+    </form>
+
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Alter</th>
+
+                {% for category, items in disciplines %}
+                    <th>{{ category }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for p in participants %}
+            <tr>
+                <td>{{ p.vorname }} {{ p.nachname }}</td>
+                <td>{{ p.age_year }}</td>
+
+                {% for category, items in disciplines %}
+
+                    <td>
+                        <select class="form-select discipline-select"
+                                data-ep="{{ p.ep_id }}"
+                                data-category="{{ category }}">
+                            <option value="">(keine Auswahl)</option>
+
+                            {% for d in items %}
+                                <option value="{{ d.id }}"
+                                    {% if results[p.ep_id][d.id] is defined %}selected{% endif %}
+                                >{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <input type="number" step="0.01"
+                               class="form-control mt-1 result-input"
+                               data-ep="{{ p.ep_id }}"
+                               data-cat="{{ category }}"
+                               value="{% if results[p.ep_id] is defined %}
+                                        {{ results[p.ep_id] | first.leistung }}
+                                      {% endif %}">
+                    </td>
+
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+document.addEventListener("change", function(e) {
+
+    if (e.target.classList.contains("result-input")) {
+        let ep      = e.target.dataset.ep;
+        let leistung= e.target.value;
+
+        let select  = e.target.parentNode.querySelector(".discipline-select");
+        let discipline = select.value;
+
+        if (!discipline) return;
+
+        fetch("{{ path('sportabzeichen_results_save') }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: new URLSearchParams({
+                ep_id: ep,
+                discipline_id: discipline,
+                leistung: leistung
+            })
+        });
+    }
+});
+</script>
 
 {% endblock %}
