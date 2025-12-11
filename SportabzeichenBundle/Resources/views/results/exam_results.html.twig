@@ -73,7 +73,8 @@ Ergebnisse eingeben – {{ exam.exam_name }} ({{ exam.exam_year }})
                 {% set ak = 'AC9000' %}
             {% endif %}
 
-            {% set gender = (p.geschlecht|lower == 'm') ? 'MALE' : 'FEMALE' %}
+            {% set g = p.geschlecht|lower|trim %}
+            {% set gender = (g starts with 'm') ? 'MALE' : 'FEMALE' %}
 
             <tr>
                 <td>{{ p.vorname }} {{ p.nachname }}</td>
