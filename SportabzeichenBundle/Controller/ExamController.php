@@ -137,4 +137,49 @@ final class ExamController extends AbstractPageController
             'students' => $students,
         ]);
     }
+    #[Route('/{id}/participants/auto-add', name: 'auto_add_participants', methods: ['POST'])]
+public function autoAddParticipants(int $id, Connection $conn): Response
+{
+    $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+
+    // Prüfung laden
+    $exam = $conn->fetchAssociative("SELECT * FROM sportabzeichen_exams WHERE id = ?", [$id]);
+    if (!$exam) {
+        throw $this->createNotFoundException("Prüfung nicht gefunden");
+    }
+
+    // Alle Teilnehmer (global)
+    $allParticipants = $conn->fetchAllAssociative("
+        SELECT id, geburtsdatum
+        FROM sportabzeichen_participants
+        WHERE geschlecht IS NOT NULL 
+          AND geburtsdatum IS NOT NULL
+    ");
+
+    // Bereits vorhandene Teilnehmer der Prüfung
+    $existing = $conn->fetchFirstColumn("
+        SELECT participant_id
+        FROM sportabzeichen_exam_participants
+        WHERE exam_id = ?
+    ", [$id]);
+
+    foreach ($allParticipants as $p) {
+
+        if (in_array($p['id'], $existing)) {
+            continue; // schon drin
+        }
+
+        // Altersberechnung
+        $ageYear = $exam['exam_year'] - (int)substr($p['geburtsdatum'], 0, 4);
+
+        // Einfügen
+        $conn->insert('sportabzeichen_exam_participants', [
+            'exam_id'        => $id,
+            'participant_id' => $p['id'],
+            'age_year'       => $ageYear
+        ]);
+    }
+
+    return $this->redirectToRoute('sportabzeichen_exam_participants', ['id' => $id]);
+    }
 }
