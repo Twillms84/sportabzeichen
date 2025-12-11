@@ -32,7 +32,50 @@ class ExamResultController extends AbstractPageController
     'title' => 'Prüfung auswählen',
     ]);
 }
-    /**
+    
+    #[Route(path: '/{examId}', name: 'index', methods: ['GET'])]
+public function index(int $examId, Connection $conn): Response
+{
+    $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+
+    // Prüfung laden
+    $exam = $conn->fetchAssociative("
+        SELECT id, exam_name, exam_year, exam_date
+        FROM sportabzeichen_exams
+        WHERE id = ?
+    ", [$examId]);
+
+    if (!$exam) {
+        throw $this->createNotFoundException("Prüfung nicht gefunden");
+    }
+
+    // Teilnehmer der Prüfung
+    $participants = $conn->fetchAllAssociative("
+        SELECT ep.id AS ep_id,
+               p.vorname,
+               p.nachname,
+               p.geschlecht,
+               ep.age_year
+        FROM sportabzeichen_exam_participants ep
+        JOIN sportabzeichen_participants p ON p.id = ep.participant_id
+        WHERE ep.exam_id = ?
+        ORDER BY p.nachname, p.vorname
+    ", [$examId]);
+
+    // Disziplinen gruppiert (für Filter)
+    $disciplines = $conn->fetchAllAssociative("
+        SELECT id, name, kategorie, einheit
+        FROM sportabzeichen_disciplines
+        ORDER BY kategorie, name
+    ");
+
+    return $this->render('@PulsRSportabzeichen/results/exam_results.html.twig', [
+        'exam'        => $exam,
+        'participants'=> $participants,
+        'disciplines' => $disciplines,
+        ]);
+    }
+     /**
      * Ergebnisse einer Person innerhalb einer Prüfung anzeigen/bearbeiten
      */
     #[Route(path: '/{examId}/edit/{epId}', name: 'edit', methods: ['GET'])]
