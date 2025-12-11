@@ -16,6 +16,17 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route(path: '/sportabzeichen/exams/results', name: 'sportabzeichen_results_')]
 class ExamResultController extends AbstractPageController
 {
+    #[Route(path: '/', name: 'exams', methods: ['GET'])]
+    public function examSelection(Connection $conn): Response
+    {
+    $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+
+    $exams = $conn->fetchAllAssociative("
+        SELECT id, exam_name, exam_year, exam_date
+        FROM sportabzeichen_exams
+        ORDER BY exam_year DESC, exam_date DESC
+    ");
+
     /**
      * Ergebnisse einer Person innerhalb einer Prüfung anzeigen/bearbeiten
      */
