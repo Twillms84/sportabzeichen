@@ -72,7 +72,7 @@ final class ExamResultController extends AbstractPageController
     #[Route('/', name: 'exams', methods: ['GET'])]
     public function examSelection(Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_RESULTS');
 
         $exams = $conn->fetchAllAssociative("
             SELECT id, exam_name, exam_year, exam_date
@@ -92,7 +92,7 @@ final class ExamResultController extends AbstractPageController
     #[Route('/exam/{examId}', name: 'index', methods: ['GET'])]
     public function index(int $examId, Request $request, Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_RESULTS');
 
         // Prüfung laden
         $exam = $conn->fetchAssociative("
@@ -236,7 +236,7 @@ final class ExamResultController extends AbstractPageController
     #[Route('/exam/{examId}/save-all', name: 'save_all', methods: ['POST'])]
     public function saveAll(int $examId, Request $request, Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_RESULTS');
 
         $formData = $request->request->all('results');
 
