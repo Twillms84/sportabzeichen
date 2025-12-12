@@ -14,9 +14,6 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
-    PulsR\SportabzeichenBundle\EventListener\:
-        resource: '../../EventListener/*'
-
     PulsR\SportabzeichenBundle\Crud\:
         resource: '../../Crud/*'
         public: true
