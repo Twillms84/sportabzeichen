@@ -14,22 +14,4 @@ class PulsRSportabzeichenBundle extends Bundle implements AutoloadRoutingBundleI
         return new PulsRSportabzeichenExtension();
     }
 
-    public function getPrivileges(): array
-    {
-        return [
-            'PRIV_SPORTABZEICHEN_REQUIREMENTS' => [
-                'name' => 'Sportabzeichen – Anforderungen verwalten',
-                'description' => 'Importieren und Bearbeiten der Sportabzeichen-Anforderungen.',
-            ],
-            'PRIV_SPORTABZEICHEN_MANAGE_PARTICIPANTS' => [
-                'name' => 'Sportabzeichen – Teilnehmer verwalten',
-                'description' => 'Teilnehmer zu Prüfungen hinzufügen oder entfernen.',
-            ],
-            'PRIV_SPORTABZEICHEN_RESULTS' => [
-                'name' => 'Sportabzeichen – Ergebnisse eintragen',
-                'description' => 'Erfassungsmaske für Listen- und Einzel-Ergebniseingabe.',
-            ],
-        ];
-}
-
 }

@@ -45,7 +45,7 @@ final class ExamController extends AbstractPageController
     #[Route('/new', name: 'new')]
     public function new(Request $request, Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');
+        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE_PARTICIPANTS');
 
         if ($request->isMethod('POST')) {
             $name = trim($request->request->get('exam_name'));
