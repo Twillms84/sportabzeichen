@@ -6,8 +6,8 @@ services:
         public: false
 
     PulsR\SportabzeichenBundle\EventListener\MenuListener:
-    tags:
-        - { name: iserv.menu.main }
+        tags:
+            - { name: iserv.menu.main }
 
     PulsR\SportabzeichenBundle\Controller\:
         resource: '../../Controller/*'
