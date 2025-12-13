@@ -21,13 +21,11 @@ final class MenuListener implements MainMenuListenerInterface
     {
         $menu = $event->getMenu();
 
-        // Wird angezeigt, sobald der Benutzer irgendein Recht besitzt
-        if (
-            $this->auth->isGranted('PRIV_SPORTABZEICHEN_RESULTS') ||
-            $this->auth->isGranted('PRIV_SPORTABZEICHEN_MANAGE_PARTICIPANTS') ||
-            $this->auth->isGranted('PRIV_SPORTABZEICHEN_REQUIREMENTS')
-        ) {
-            $root = $menu->addChild('sportabzeichen', [
+        /* ----------------------------------------------------------
+         * Sportabzeichen – Ergebnisse
+         * ---------------------------------------------------------- */
+        if ($this->auth->isGranted('PRIV_SPORTABZEICHEN_RESULTS')) {
+            $menu->addChild('sportabzeichen_results', [
                 'route' => 'sportabzeichen_results_exams',
                 'label' => _('Sportabzeichen'),
                 'extras' => [
@@ -35,78 +33,17 @@ final class MenuListener implements MainMenuListenerInterface
                     'icon_style' => 'fas',
                 ],
             ]);
-        } else {
-            return;
         }
 
         /* ----------------------------------------------------------
-         * Ergebnisse eintragen
+         * Sportabzeichen – Verwaltung
          * ---------------------------------------------------------- */
-        if ($this->auth->isGranted('PRIV_SPORTABZEICHEN_RESULTS')) {
-            $root->addChild('sportabzeichen_results', [
-                'route' => 'sportabzeichen_results_exams',
-                'label' => _('Ergebnisse eintragen'),
-                'extras' => [
-                    'icon' => 'table',
-                    'icon_style' => 'fas',
-                ],
-            ]);
-        }
-
-        /* ----------------------------------------------------------
-         * Teilnehmer verwalten
-         * ---------------------------------------------------------- */
-        if ($this->auth->isGranted('PRIV_SPORTABZEICHEN_MANAGE_PARTICIPANTS')) {
-            $root->addChild('sportabzeichen_participants', [
-                'route' => 'sportabzeichen_exam_index',
-                'label' => _('Teilnehmer verwalten'),
-                'extras' => [
-                    'icon' => 'users',
-                    'icon_style' => 'fas',
-                ],
-            ]);
-        }
-
-        /* ----------------------------------------------------------
-         * Verwaltung – nur für Admin/Koordinator
-         * ---------------------------------------------------------- */
-        if ($this->auth->isGranted('PRIV_SPORTABZEICHEN_REQUIREMENTS')) {
-
-            $verwaltung = $root->addChild('sportabzeichen_admin', [
-                'route' => 'sportabzeichen_admin_upload',
-                'label' => _('Verwaltung'),
+        if ($this->auth->isGranted('PRIV_SPORTABZEICHEN_ADMIN')) {
+            $menu->addChild('sportabzeichen_admin', [
+                'route' => 'sportabzeichen_admin_dashboard',
+                'label' => _('Sportabzeichen-Verwaltung'),
                 'extras' => [
                     'icon' => 'cog',
-                    'icon_style' => 'fas',
-                ],
-            ]);
-
-            // Unterpunkt: Anforderungen anzeigen
-            $verwaltung->addChild('sportabzeichen_requirements_view', [
-                'route' => 'sportabzeichen_manage_view',
-                'label' => _('Anforderungen anzeigen'),
-                'extras' => [
-                    'icon' => 'eye',
-                    'icon_style' => 'fas',
-                ],
-            ]);
-
-            // Unterpunkt: CRUD Anforderungen bearbeiten
-            $verwaltung->addChild('sportabzeichen_requirements_edit', [
-                'route' => 'iserv_crud_sportabzeichenrequirement_index',
-                'label' => _('Anforderungen bearbeiten'),
-                'extras' => [
-                    'icon' => 'edit',
-                    'icon_style' => 'fas',
-                ],
-            ]);
-
-            // Unterpunkt: CSV Upload
-            $verwaltung->addChild('sportabzeichen_requirements_upload', [
-                'route' => 'sportabzeichen_admin_upload',
-                'label' => _('CSV-Upload Anforderungen'),
-                'extras' => [
-                    'icon' => 'file-upload',
                     'icon_style' => 'fas',
                 ],
             ]);
