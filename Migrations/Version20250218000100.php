@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PulsR\SportabzeichenBundle\Migrations;
+namespace IServ\Module\Sportabzeichen\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
