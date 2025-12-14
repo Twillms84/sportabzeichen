@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace IServ\Module\Sportabzeichen\Controller;
 
 use Doctrine\DBAL\Connection;
-use IServ\CoreBundle\Controller\AbstractPageController;
+use IServ\Core\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Zentrale Verwaltungsoberfläche Sportabzeichen
  */
 #[Route('/sportabzeichen/admin', name: 'sportabzeichen_admin_')]
-final class AdminController extends AbstractPageController
+#[IsGranted('sportabzeichen.admin')]
+final class AdminController extends AbstractController
 {
     /* ------------------------------------------------------------
      * Dashboard / Einstieg
@@ -21,9 +23,7 @@ final class AdminController extends AbstractPageController
     #[Route('/', name: 'dashboard', methods: ['GET'])]
     public function dashboard(): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_ADMIN');
-
-        return $this->render('@PulsRSportabzeichen/admin/dashboard.html.twig', [
+        return $this->render('sportabzeichen/admin/dashboard.html.twig', [
             'activeTab' => 'dashboard',
         ]);
     }
@@ -32,17 +32,16 @@ final class AdminController extends AbstractPageController
      * Anforderungen
      * ------------------------------------------------------------ */
     #[Route('/requirements', name: 'requirements', methods: ['GET'])]
+    #[IsGranted('sportabzeichen.admin')]
     public function requirements(Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_REQUIREMENTS');
+        $years = $conn->fetchFirstColumn(
+            'SELECT DISTINCT jahr
+             FROM sportabzeichen_requirements
+             ORDER BY jahr DESC'
+        );
 
-        $years = $conn->fetchFirstColumn("
-            SELECT DISTINCT jahr
-            FROM sportabzeichen_requirements
-            ORDER BY jahr DESC
-        ");
-
-        return $this->render('@PulsRSportabzeichen/admin/requirements.html.twig', [
+        return $this->render('sportabzeichen/admin/requirements.html.twig', [
             'activeTab' => 'requirements',
             'years'     => $years,
         ]);
@@ -52,19 +51,18 @@ final class AdminController extends AbstractPageController
      * Teilnehmer
      * ------------------------------------------------------------ */
     #[Route('/participants', name: 'participants', methods: ['GET'])]
+    #[IsGranted('sportabzeichen.admin')]
     public function participants(Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE_PARTICIPANTS');
+        $participants = $conn->fetchAllAssociative(
+            'SELECT id, vorname, nachname, geschlecht, geburtsdatum
+             FROM sportabzeichen_participants
+             ORDER BY nachname, vorname'
+        );
 
-        $participants = $conn->fetchAllAssociative("
-            SELECT id, vorname, nachname, geschlecht, geburtsdatum
-            FROM sportabzeichen_participants
-            ORDER BY nachname, vorname
-        ");
-
-        return $this->render('@PulsRSportabzeichen/admin/participants.html.twig', [
-            'activeTab'   => 'participants',
-            'participants'=> $participants,
+        return $this->render('sportabzeichen/admin/participants.html.twig', [
+            'activeTab'    => 'participants',
+            'participants' => $participants,
         ]);
     }
 
@@ -72,17 +70,16 @@ final class AdminController extends AbstractPageController
      * Prüfungen verwalten
      * ------------------------------------------------------------ */
     #[Route('/exams', name: 'exams', methods: ['GET'])]
+    #[IsGranted('sportabzeichen.admin')]
     public function exams(Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_ADMIN');
+        $exams = $conn->fetchAllAssociative(
+            'SELECT *
+             FROM sportabzeichen_exams
+             ORDER BY exam_year DESC, exam_date DESC'
+        );
 
-        $exams = $conn->fetchAllAssociative("
-            SELECT *
-            FROM sportabzeichen_exams
-            ORDER BY exam_year DESC, exam_date DESC
-        ");
-
-        return $this->render('@PulsRSportabzeichen/admin/exams.html.twig', [
+        return $this->render('sportabzeichen/admin/exams.html.twig', [
             'activeTab' => 'exams',
             'exams'     => $exams,
         ]);

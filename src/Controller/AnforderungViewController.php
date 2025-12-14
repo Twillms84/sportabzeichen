@@ -13,7 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route(path: '/sportabzeichen/manage', name: 'sportabzeichen_manage_')]
 final class AnforderungViewController extends AbstractPageController
 {
-    #[Route(path: '/view', name: 'view')]
+    #[Route('/sportabzeichen/view')]
+    #[IsGranted('sportabzeichen.admin')]
     public function view(Request $request, Connection $conn): Response
     {
         $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_MANAGE');

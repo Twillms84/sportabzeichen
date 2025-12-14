@@ -21,10 +21,10 @@ final class AnforderungUploadController extends AbstractPageController
         'SWIMMING'     => 'Schwimmen',
     ];
 
-    #[Route(path: '/upload', name: 'upload')]
+    #[Route('/sportabzeichen/admin')]
+    #[IsGranted('sportabzeichen.admin')]
     public function upload(Request $request, Connection $conn): Response
     {
-        $this->denyAccessUnlessGranted('PRIV_SPORTABZEICHEN_REQUIREMENTS');
 
         $message = null;
         $error = null;
