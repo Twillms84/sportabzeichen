@@ -1,0 +1,3 @@
+sportabzeichen:
+  resource: '../../src/PulsR/SportabzeichenBundle/Controller/'
+  type: attribute

@@ -1,0 +1,16 @@
+menu:
+  main:
+
+    sportabzeichen:
+      label: "Sportabzeichen"
+      route: "sportabzeichen_results_exams"
+      icon: "medal"
+      icon_style: "fas"
+      privilege: PRIV_SPORTABZEICHEN_RESULTS
+
+    sportabzeichen_admin:
+      label: "Sportabzeichen Verwaltung"
+      route: "sportabzeichen_admin_dashboard"
+      icon: "cog"
+      icon_style: "fas"
+      privilege: PRIV_SPORTABZEICHEN_ADMIN
