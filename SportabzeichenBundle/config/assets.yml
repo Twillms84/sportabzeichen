@@ -1,0 +1,6 @@
+js:
+  sportabzeichen-results:
+    path: bundles/pulsrsportabzeichen/js/results.js
+
+  sportabzeichen-exams:
+    path: bundles/pulsrsportabzeichen/js/exam.js
